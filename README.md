@@ -101,6 +101,3 @@ node src/utils/command-deploy.js
 2. Export an object with `name` (event name), `once` (boolean), and `execute` function
 3. The `event-loader.js` automatically loads all events from sub-folders
 4. Event names must match Discord.js event names (e.g., `guildMemberAdd`, `interactionCreate`)
-## Feedback
-I'm a 2nd year CS student with limited coding experience, so any feedback is greatly appreciated! Thanks for using my bot!
-
