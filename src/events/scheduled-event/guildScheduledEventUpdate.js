@@ -11,22 +11,15 @@ module.exports = {
      * @param {import('discord.js').Client} client
      */
     async execute(oldEvent, newEvent, client) {
-        console.log('[DEBUG] guildScheduledEventUpdate triggered');
-        console.log(`[DEBUG] Event: ${newEvent.name}, Event ID: ${newEvent.id}`);
-        console.log(`[DEBUG] Old Status: ${oldEvent.status}, New Status: ${newEvent.status}`);
-        
         try {
             // Check if event just completed
-            if (oldEvent.status !== GuildScheduledEventStatus.Completed && 
+            if (oldEvent.status !== GuildScheduledEventStatus.Completed &&
                 newEvent.status === GuildScheduledEventStatus.Completed) {
-                
-                console.log(`[DEBUG] Event ${newEvent.name} just completed, processing feedback requests`);
-                
+
                 // Update or create event in database
                 let eventDoc = await scheduledEvent.findOne({ eventId: newEvent.id });
-                
+
                 if (!eventDoc) {
-                    console.log(`[DEBUG] Event ${newEvent.id} not found, creating new document`);
                     eventDoc = new scheduledEvent({
                         eventId: newEvent.id,
                         guildId: newEvent.guildId,
@@ -40,13 +33,8 @@ module.exports = {
                 }
 
                 const participants = eventDoc.participants || [];
-                
-                if (participants.length === 0) {
-                    console.log('[DEBUG] No participants to send feedback request to');
-                    return;
-                }
 
-                console.log(`[DEBUG] Sending feedback requests to ${participants.length} participants`);
+                if (participants.length === 0) return;
 
                 // Create persistent button
                 const row = new ActionRowBuilder()
@@ -70,10 +58,8 @@ module.exports = {
                                 content: messageContent,
                                 components: [row]
                             });
-                            console.log(`[DEBUG] Sent feedback request to ${user.tag} via DM`);
                         } catch (dmError) {
                             // DM failed, try channel mention as fallback
-                            console.log(`[DEBUG] Could not DM ${user.tag}, falling back to channel`);
                             
                             if (newEvent.channel) {
                                 await newEvent.channel.send({
@@ -84,7 +70,7 @@ module.exports = {
                         }
                         await new Promise(resolve => setTimeout(resolve, 5000));
                     } catch (error) {
-                        console.error(`[DEBUG] Error sending feedback request to user ${userId}:`, error);
+                        console.error(`[ERROR] Failed to send feedback request to user ${userId}:`, error);
                     }
                 }
             } else {

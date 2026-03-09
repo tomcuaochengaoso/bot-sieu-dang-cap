@@ -4,7 +4,6 @@ const WelcomeChannel = require('../../models/WelcomeChannel')
 const data = new SlashCommandBuilder()
     .setName('set-welcome-channel')
     .setDescription('Setup a channel to send welcome message to new members')
-    // .setContexts(['Guild'])
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addChannelOption((option) =>
         option

@@ -1,4 +1,3 @@
-// commands/admin/set-main-guild.js
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const MainGuild = require('../../models/MainGuild');
 

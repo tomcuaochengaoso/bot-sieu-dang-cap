@@ -58,7 +58,7 @@ module.exports = {
             const count = interaction.options.getInteger('count') || 10;
             const filter = interaction.options.getString('filter') || 'all';
 
-            // FIXED: Build query to only show THIS server's feedback + DMs
+            // Build query to only show this server's feedback + DMs
             let query = {};
             if (filter === 'server') {
                 // Only this server's feedback

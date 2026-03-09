@@ -5,8 +5,7 @@ const data = new SlashCommandBuilder()
     .setName('remove-welcome-channel')
     .setDescription('Remove a target welcome channel')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    // .setContexts(['Guild'])
-    .addChannelOption((option) => 
+    .addChannelOption((option) =>
         option
             .setName('target-channel')
             .setDescription('The channel to remove channel messages from.')
