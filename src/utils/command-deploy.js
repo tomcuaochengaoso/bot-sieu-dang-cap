@@ -30,28 +30,15 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
   try {
-    // 1. Deploy to dev guild for instant testing
-    if (process.env.DISCORD_DEV_GUILD_ID) {
-      console.log('Deploying to dev guild for instant testing...');
-      await rest.put(
-        Routes.applicationGuildCommands(
-          process.env.DISCORD_CLIENT_ID,
-          process.env.DISCORD_DEV_GUILD_ID
-        ),
-        { body: commands },
-      );
-      console.log('Dev guild commands updated instantly!');
-    }
-
-    // 2. Also deploy globally for all servers
-    console.log(`\nDeploying ${commands.length} commands globally...`);
+    // Deploy globally for all servers
+    console.log(`Deploying ${commands.length} commands globally...`);
     const results = await rest.put(
       Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
       { body: commands },
     );
     console.log(`Successfully deployed ${results.length} commands globally!`);
-    console.log('May take 1-2 hours to appear in all servers.');
-    
+    console.log('May take up to 1 hour to appear in all servers.');
+
   } catch (error) {
     console.error('Error:', error);
   }

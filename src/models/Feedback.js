@@ -59,7 +59,7 @@ feedbackSchema.post('save', async function(doc) {
             const mainGuildConfig = await MainGuild.findOne({ _id: 'main' });
             
             if (!mainGuildConfig) {
-                console.log('No main guild configured - use /set-main-guild command');
+                console.log('No main guild configured - use /feedback set-main-guild');
                 return;
             }
 

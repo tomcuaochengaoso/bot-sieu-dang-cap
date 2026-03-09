@@ -1,4 +1,4 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, MessageFlags } = require('discord.js');
 const Feedback = require('./Feedback');
 
 module.exports = {
@@ -38,13 +38,13 @@ module.exports = {
 
             await interaction.reply({
                 content: 'Thanks for your feedback! It has been recorded.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         } catch (error) {
             console.error('Error in feedback modal:', error);
             await interaction.reply({
                 content: 'There was an error submitting your feedback. Please try again later.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }
