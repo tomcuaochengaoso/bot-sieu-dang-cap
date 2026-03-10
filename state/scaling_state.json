@@ -1,0 +1,16 @@
+{
+  "currentTier": 0,
+  "config": {
+    "level": 0,
+    "queueCapacity": 500,
+    "batchSize": 50,
+    "interval": 10000,
+    "threshold": 0.6
+  },
+  "scaleUpCount": 0,
+  "scaleDownCount": 0,
+  "recentHistory": [],
+  "tierTime": {
+    "0": 505094
+  }
+}

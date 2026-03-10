@@ -2,6 +2,7 @@
 // Reliable data transmission with retry, batch splitting, and metrics
 
 const { TemporaryError, PermanentError, SizeViolationError } = require('../errors/apiErrors');
+const debug = require('../utils/debug');
 
 // --- Constants (Guide #1 - Component 5) ---
 const MAX_BATCH_ITEMS = 2000;
@@ -18,8 +19,11 @@ class HttpEngine {
 
   async post(url, body, headers) {
     this.stats.requests++;
+    const bodyLen = body?.length || 0;
+    debug('api', `POST ${url} (${(bodyLen / 1024).toFixed(1)}KB) | req#${this.stats.requests}`);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeout);
+    const start = Date.now();
 
     try {
       const res = await fetch(url, {
@@ -29,12 +33,16 @@ class HttpEngine {
         signal: controller.signal,
       });
 
+      const elapsed = Date.now() - start;
+      debug('api', `  Response: ${res.status} in ${elapsed}ms`);
+
       if (res.status >= 500) {
         this.stats.errors++;
         throw new TemporaryError(`Server error: ${res.status}`, res.status);
       }
       if (res.status === 429) {
         this.stats.errors++;
+        debug('api', `  RATE LIMITED`);
         throw new TemporaryError('Rate limited', 429);
       }
       if (res.status === 413) {
@@ -43,17 +51,23 @@ class HttpEngine {
       }
       if (res.status >= 400) {
         this.stats.errors++;
-        throw new PermanentError(`Client error: ${res.status}`, res.status);
+        let errorBody = '';
+        try { errorBody = await res.text(); } catch {}
+        debug('api', `  Error response body: ${errorBody.slice(0, 500)}`);
+        throw new PermanentError(`Client error: ${res.status} - ${errorBody.slice(0, 200)}`, res.status);
       }
 
       try {
-        return await res.json();
+        const json = await res.json();
+        debug('api', `  Response body: ${JSON.stringify(json).slice(0, 200)}`);
+        return json;
       } catch {
         return { status: 1 };
       }
     } catch (err) {
       if (err instanceof TemporaryError || err instanceof PermanentError) throw err;
       this.stats.errors++;
+      debug('api', `  Network error: ${err.message}`);
       throw new TemporaryError(`Network error: ${err.message}`);
     } finally {
       clearTimeout(timer);
@@ -81,19 +95,25 @@ class RetryPolicy {
     let lastError;
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {
+        if (attempt > 0) debug('api', `  Retry attempt ${attempt}/${this.maxRetries}`);
         const result = await operation();
         this.retryCount = 0;
         return result;
       } catch (err) {
-        if (err instanceof PermanentError || err instanceof SizeViolationError) throw err;
+        if (err instanceof PermanentError || err instanceof SizeViolationError) {
+          debug('api', `  Permanent error, no retry: ${err.message}`);
+          throw err;
+        }
         lastError = err;
         if (attempt < this.maxRetries) {
           this.retryCount++;
           const delay = this._calculateDelay(attempt);
+          debug('api', `  Temporary error: ${err.message} | retrying in ${Math.round(delay)}ms`);
           await new Promise(r => setTimeout(r, delay));
         }
       }
     }
+    debug('api', `  All ${this.maxRetries} retries exhausted: ${lastError.message}`);
     throw lastError;
   }
 }
@@ -175,10 +195,14 @@ class ApiOrchestrator {
 
     if (validate) {
       const errors = validateBatch(events);
-      if (errors.length) return { success: false, errors };
+      if (errors.length) {
+        debug('api', `Batch validation failed: ${errors.join(', ')}`);
+        return { success: false, errors };
+      }
     }
 
     if (!isBatchSafe(events) && autoSplit) {
+      debug('api', `Batch too large (${events.length} items), splitting`);
       return this._sendSplitBatch(events);
     }
     return this._sendSingleBatch(events);
@@ -186,6 +210,10 @@ class ApiOrchestrator {
 
   async _sendSingleBatch(events) {
     try {
+      // Inject project token into each event's properties (required by Mixpanel)
+      for (const event of events) {
+        if (event.properties) event.properties.token = this.token;
+      }
       const body = encodeBatch(events);
       const headers = createAuthHeaders(this.token);
       const url = `${this.endpoint}?strict=1`;

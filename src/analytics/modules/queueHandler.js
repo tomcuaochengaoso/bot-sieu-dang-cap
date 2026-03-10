@@ -2,6 +2,7 @@
 // Event buffering, adaptive scaling, batch coordination, and system monitoring
 
 const { isBatchSafe, estimateBatchSize, splitBatch } = require('./httpClient');
+const debug = require('../utils/debug');
 
 // --- System 2: Adaptive Scaling Manager ---
 
@@ -222,13 +223,22 @@ class EventQueue {
   }
 
   add(event) {
-    if (!event || !event.event || !event.properties) return false;
+    if (!event || !event.event || !event.properties) {
+      debug('queue', `Rejected invalid event (missing event/properties)`);
+      return false;
+    }
     const success = this.queue.add(event);
-    if (!success) this.totalOverflows++;
+    if (!success) {
+      this.totalOverflows++;
+      debug('queue', `OVERFLOW: "${event.event}" rejected | size=${this.queue.size}/${this.queue.maxSize}`);
+    } else {
+      debug('queue', `Added: "${event.event}" | size=${this.queue.size}/${this.queue.maxSize} (${(this.getUtilization() * 100).toFixed(1)}%)`);
+    }
 
     // Threshold check
     const utilization = this.getUtilization();
     if (utilization >= this.threshold && this.thresholdCallback) {
+      debug('queue', `Threshold hit: ${(utilization * 100).toFixed(1)}% >= ${(this.threshold * 100).toFixed(1)}%`);
       this.thresholdCallback(this.queue.size, utilization);
     }
 
@@ -298,6 +308,8 @@ class BatchCoordinator {
     const startTime = Date.now();
     const estimatedSize = estimateBatchSize(events);
 
+    debug('queue', `Sending batch: ${events.length} events (~${(estimatedSize / 1024).toFixed(1)}KB) | tier=${this.currentTier}`);
+
     try {
       const result = await this.apiClient.sendBatch(events, { autoSplit: true });
       const responseTime = Date.now() - startTime;
@@ -308,9 +320,11 @@ class BatchCoordinator {
       if (result.success) {
         this.stats.successfulBatches++;
         this.stats.totalEventsSent += result.eventsSent || events.length;
+        debug('queue', `Batch OK: ${result.eventsSent || events.length} sent in ${responseTime}ms`);
         if (this.onSuccess) this.onSuccess(result);
       } else {
         this.stats.failedBatches++;
+        debug('queue', `Batch FAILED: ${result.error || 'unknown'} in ${responseTime}ms`);
         if (this.onFailure) this.onFailure(result);
       }
 
@@ -324,6 +338,7 @@ class BatchCoordinator {
       this.stats.batchesSent++;
       this.stats.failedBatches++;
       this.lastBatchTime = Date.now();
+      debug('queue', `Batch ERROR: ${err.message}`);
       const errorResult = { success: false, error: err.message, eventsFailed: events.length };
       if (this.onFailure) this.onFailure(errorResult);
       return errorResult;
@@ -476,6 +491,7 @@ class ProcessingCoordinator {
       if (allOk && events.length) this.stats.successful++;
       else if (!events.length) this.stats.successful++;
       else this.stats.failed++;
+      debug('queue', `Coordinator: ${eventType} -> ${events.length} event(s) | total=${this.stats.totalProcessed} ok=${this.stats.successful} fail=${this.stats.failed}`);
       return events.length;
     } catch (err) {
       console.error(`[ProcessingCoordinator] Error:`, err.message);

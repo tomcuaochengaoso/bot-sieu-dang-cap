@@ -3,6 +3,7 @@
 // (Modified from ivan-bot's discordClient.js to share the main bot's client)
 
 const { ChannelType, AuditLogEvent } = require('discord.js');
+const debug = require('../utils/debug');
 
 class AnalyticsEventListener {
   constructor(client, processingCoordinator) {
@@ -10,6 +11,7 @@ class AnalyticsEventListener {
     this.eventCount = 0;
     this.client = client;
 
+    debug('event', 'Setting up analytics event handlers');
     this._setupEventHandlers();
   }
 
@@ -432,8 +434,12 @@ class AnalyticsEventListener {
   // --- Event forwarding ---
   _forward(eventType, data) {
     try {
+      const userName = data.user?.username || data.user?.tag || data.user?.id || 'unknown';
+      const channelName = data.channel?.name || data.channel?.id || 'N/A';
+      debug('event', `>> ${eventType} | user=${userName} | channel=${channelName}`);
       const count = this.coordinator.processEvent(eventType, data);
       this.eventCount += count;
+      debug('event', `   -> produced ${count} analytics event(s)`);
     } catch (err) {
       console.error(`[Analytics] Forward error for ${eventType}:`, err.message);
     }

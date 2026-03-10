@@ -14,6 +14,7 @@ const {
 } = require('./modules/queueHandler');
 const AnalyticsEventListener = require('./modules/discordClient');
 const StateFileWriter = require('./utils/stateFileWriter');
+const debug = require('./utils/debug');
 
 class AnalyticsSystem {
   constructor(discordClient) {
@@ -30,8 +31,10 @@ class AnalyticsSystem {
       return;
     }
     this.enabled = true;
+    debug('life', `Analytics system initializing | debug=${debug.enabled}`);
 
     const stateDir = process.env.STATE_DIR || './state';
+    debug('life', `State dir: ${stateDir}`);
 
     // --- Component creation (bottom-up order) ---
 
@@ -73,6 +76,7 @@ class AnalyticsSystem {
 
     // --- Wire callbacks ---
     this._wireCallbacks();
+    debug('life', 'All components wired');
 
     // Remove old shutdown flag
     this.stateWriter.removeFlag('clean_shutdown.flag');
@@ -146,6 +150,7 @@ class AnalyticsSystem {
         if (this.batchCoordinator.shouldSend(this.eventQueue.size)) {
           const events = this.eventQueue.getBatch(this.batchCoordinator.batchSize);
           if (events.length) {
+            debug('life', `Batch loop: collecting ${events.length} events from queue`);
             for (const event of events) {
               const category = event.properties?.luong || 'Unknown';
               this.monitor.recordEvent(category);
@@ -153,6 +158,7 @@ class AnalyticsSystem {
 
             const result = await this.batchCoordinator.sendBatch(events);
             if (result && !result.success && events.length) {
+              debug('life', `Batch failed, returning ${events.length} events to queue`);
               this.eventQueue.returnItems(events);
             }
           }
@@ -196,6 +202,7 @@ class AnalyticsSystem {
     if (!this.enabled) return;
 
     console.log('[Analytics] Starting analytics pipeline...');
+    debug('life', `Config: tier=${this.scalingManager.currentTierIndex} batch=${this.scalingManager.currentTier.batchSize} interval=${this.scalingManager.currentTier.interval}ms queue=${this.scalingManager.currentTier.queueCapacity}`);
     this.running = true;
     this.batchLoopTask = this._batchLoop();
     console.log('[Analytics] Pipeline started');
@@ -204,6 +211,7 @@ class AnalyticsSystem {
   async stop() {
     if (!this.enabled) return;
 
+    debug('life', 'Stopping analytics pipeline...');
     this.running = false;
 
     // Write clean shutdown flag

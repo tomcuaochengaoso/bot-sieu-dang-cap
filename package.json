@@ -18,7 +18,7 @@
     "dotenv": "^17.2.3",
     "js-yaml": "^4.1.0",
     "mongoose": "^8.19.3",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^8.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

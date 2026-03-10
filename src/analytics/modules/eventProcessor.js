@@ -6,6 +6,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 const { randomUUID } = require('crypto');
 const { ChannelType } = require('discord.js');
+const debug = require('../utils/debug');
 
 // --- Foundation Layer: Utilities ---
 
@@ -485,6 +486,8 @@ class EventProcessor {
       const messageProps = this._extractMessage(message);
       const context = { ...userProps, ...channelProps, ...messageProps, ...extra };
 
+      debug('process', `Processing: ${eventType} | user=${userProps.discordname || 'N/A'} | ch=${channelProps.channel_name || 'N/A'} (${channelProps.channel_type_class || '?'})`);
+
       // Track user messages for correlation
       if (user && !user.bot && message && channel) {
         this.correlation.addUserMessage(
@@ -494,15 +497,22 @@ class EventProcessor {
           messageProps.message_id,
           message.content?.slice(0, 200) || '',
         );
+        debug('process', `  Buffered user message for correlation (ch=${channelProps.channel_id})`);
       }
 
       // Bot message path
       if (user?.bot) {
+        debug('process', `  Bot message path: botId=${user.id}`);
         return this._processBotMessage(user, channel, message, context);
       }
 
       // Event identification (chain of responsibility)
       const identifications = this._identify(eventType, context);
+
+      debug('process', `  Identified ${identifications.length} event(s):`);
+      for (const id of identifications) {
+        debug('process', `    -> name="${id.localizedName}" | luong="${id.luong}" | type=${id.eventType}${id.unidentified ? ' [UNIDENTIFIED]' : ''}`);
+      }
 
       // Create analytics events
       return identifications.map(id => this._createAnalyticsEvent(id, context));
@@ -671,7 +681,12 @@ class EventProcessor {
   // --- Bot message processing ---
   _processBotMessage(user, channel, message, context) {
     const botConfig = this.correlation.getBotConfig(user.id);
-    if (!botConfig) return [];
+    if (!botConfig) {
+      debug('process', `  Bot ${user.id} not tracked, skipping`);
+      return [];
+    }
+
+    debug('process', `  Tracked bot: ${botConfig.bot_name} (${user.id})`);
 
     const designatedThreadId = this.correlation.designatedBotThreadId;
     const inBotThread = !!(context.thread_id && designatedThreadId && String(context.thread_id) === String(designatedThreadId));
@@ -685,12 +700,16 @@ class EventProcessor {
       eventName = botConfig.event_name;
     }
 
+    debug('process', `  Bot event: "${eventName}" | inThread=${inBotThread}`);
+
     // Correlation
     const corrResult = this.correlation.correlate(
       user.id,
       context.channel_id,
       Date.now(),
     );
+
+    debug('process', `  Correlation: type=${corrResult.type} | correlated=${corrResult.correlated}${corrResult.correlated ? ` | user=${corrResult.username} | confidence=${corrResult.confidence} | delay=${corrResult.delay}ms` : ''}`);
 
     if (corrResult.correlated) {
       this.correlation.cancelPending(corrResult.userId);

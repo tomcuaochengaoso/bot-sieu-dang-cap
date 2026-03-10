@@ -32,12 +32,20 @@ feedbackSchema.post('save', async function(doc) {
     try {
         // Import here to avoid circular dependency
         const FeedbackChannel = require('./FeedbackChannel');
-        
+        const MainGuild = require('./MainGuild');
+
         // Get the bot client instance from global
         const client = global.discordClient;
-        
+
         if (!client) {
             console.log('Discord client not available for auto-posting feedback');
+            return;
+        }
+
+        // Check if a main guild is configured — if not, skip all auto-posting
+        const mainGuildConfig = await MainGuild.findOne({ _id: 'main' });
+        if (!mainGuildConfig) {
+            console.log('No main guild configured — skipping auto-post. Use /feedback-manage set-main-guild');
             return;
         }
 
@@ -54,21 +62,13 @@ feedbackSchema.post('save', async function(doc) {
                 return;
             }
         } else {
-            // DM feedback: Post only to main server's feedback channel
-            const MainGuild = require('./MainGuild');
-            const mainGuildConfig = await MainGuild.findOne({ _id: 'main' });
-            
-            if (!mainGuildConfig) {
-                console.log('No main guild configured - use /feedback set-main-guild');
-                return;
-            }
-
+            // DM feedback: Post to main server's feedback channel
             feedbackChannelData = await FeedbackChannel.findOne({
                 guildId: mainGuildConfig.guildId
             });
 
             if (!feedbackChannelData) {
-                console.log(`No feedback channel configured for main guild ${mainGuildId}`);
+                console.log(`No feedback channel configured for main guild ${mainGuildConfig.guildId}`);
                 return;
             }
         }

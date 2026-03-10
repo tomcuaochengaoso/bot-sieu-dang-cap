@@ -46,18 +46,16 @@ const data = new SlashCommandBuilder()
     .addSubcommand(sub => sub
         .setName('setup-channel')
         .setDescription('Setup a channel to receive feedback')
-        .addChannelOption(opt => opt
-            .setName('channel')
-            .setDescription('The channel for feedback')
-            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+        .addStringOption(opt => opt
+            .setName('channel-id')
+            .setDescription('The channel ID for feedback')
             .setRequired(true)))
     .addSubcommand(sub => sub
         .setName('remove-channel')
         .setDescription('Remove a feedback channel')
-        .addChannelOption(opt => opt
-            .setName('channel')
-            .setDescription('The channel to remove')
-            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+        .addStringOption(opt => opt
+            .setName('channel-id')
+            .setDescription('The channel ID to remove')
             .setRequired(true)))
     .addSubcommand(sub => sub
         .setName('set-main-guild')
@@ -217,18 +215,23 @@ async function handleSendAll(interaction) {
 // --- Setup Channel ---
 
 async function handleSetupChannel(interaction) {
-    const channel = interaction.options.getChannel('channel');
+    const channelId = interaction.options.getString('channel-id');
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
+        const channel = await interaction.client.channels.fetch(channelId).catch(() => null);
+        if (!channel) {
+            return await interaction.followUp(`Could not find channel with ID \`${channelId}\`.`);
+        }
+
         await FeedbackChannel.findOneAndUpdate(
-            { guildId: interaction.guildId, channelId: channel.id },
-            { guildId: interaction.guildId, channelId: channel.id },
+            { guildId: interaction.guildId, channelId },
+            { guildId: interaction.guildId, channelId },
             { upsert: true, new: true }
         );
 
-        await interaction.followUp(`Configured ${channel} to receive feedback submissions.`);
+        await interaction.followUp(`Configured <#${channelId}> to receive feedback submissions.`);
     } catch (error) {
         console.error('Error setting up feedback channel:', error);
         await interaction.followUp('Failed to configure feedback channel. Check console logs.');
@@ -238,21 +241,21 @@ async function handleSetupChannel(interaction) {
 // --- Remove Channel ---
 
 async function handleRemoveChannel(interaction) {
-    const channel = interaction.options.getChannel('channel');
+    const channelId = interaction.options.getString('channel-id');
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
         const deleted = await FeedbackChannel.findOneAndDelete({
             guildId: interaction.guildId,
-            channelId: channel.id,
+            channelId,
         });
 
         if (!deleted) {
             return await interaction.followUp('That channel is not configured for feedback.');
         }
 
-        await interaction.followUp(`Removed ${channel} from receiving feedback.`);
+        await interaction.followUp(`Removed <#${channelId}> from receiving feedback.`);
     } catch (error) {
         console.error('Error removing feedback channel:', error);
         await interaction.followUp('Failed to remove feedback channel. Check console logs.');

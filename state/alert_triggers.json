@@ -1,0 +1,7 @@
+{
+  "api_failure": {
+    "triggered": true,
+    "timestamp": "2026-03-10T23:27:13.927Z",
+    "consecutiveFailures": 7
+  }
+}

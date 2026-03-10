@@ -26,7 +26,7 @@ const guildIds = [
 
     // 3. Load commands
     const commands = [];
-    const commandsPath = path.join(__dirname, 'src', 'commands');
+    const commandsPath = path.join(__dirname, 'commands');
 
     for (const folder of fs.readdirSync(commandsPath)) {
       const folderPath = path.join(commandsPath, folder);
