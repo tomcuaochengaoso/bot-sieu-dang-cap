@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-03-10T23:40:58.756Z",
+  "eventsProcessed": 7,
+  "queueSize": 0,
+  "queueMax": 500,
+  "queueUtilization": 0,
+  "uptime": 505,
+  "consecutiveApiFailures": 0,
+  "lastApiSuccess": "2026-03-10T23:38:35.853Z",
+  "currentTier": 0,
+  "batchConfig": {
+    "batchSize": 50,
+    "interval": 10000
+  }
+}

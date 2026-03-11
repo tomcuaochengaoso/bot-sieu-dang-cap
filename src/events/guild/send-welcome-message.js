@@ -30,18 +30,6 @@ module.exports = {
                 }
 
                 const buttons = new ActionRowBuilder().addComponents(
-                    // new ButtonBuilder()
-                    //     .setCustomId(`guide_${welcomeConfig.guildId}`)
-                    //     .setLabel("Guide")
-                    //     .setEmoji('123456789') // Your emoji ID
-                    //     .setStyle(ButtonStyle.Primary),
-
-                    // new ButtonBuilder()
-                    //     .setCustomId(`rules_${welcomeConfig.guildId}`)
-                    //     .setLabel("Rules")
-                    //     .setEmoji('123456789') // Your emoji ID
-                    //     .setStyle(ButtonStyle.Secondary),
-                    
                     new ButtonBuilder()
                         .setCustomId(`feedback_${welcomeConfig.guildId}`)
                         .setLabel("Feedback")
@@ -70,7 +58,7 @@ module.exports = {
                     .setTimestamp();
 
                 targetChannel.send({
-                    content: welcomeMessage, // You can remove this if you want message only in embed
+                    content: welcomeMessage,
                     embeds: [welcomeEmbed],
                     components: [buttons]
                 }).catch(() => {});
