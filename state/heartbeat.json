@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-03-10T23:40:58.756Z",
-  "eventsProcessed": 7,
+  "timestamp": "2026-03-13T02:02:49.341Z",
+  "eventsProcessed": 0,
   "queueSize": 0,
   "queueMax": 500,
   "queueUtilization": 0,
-  "uptime": 505,
+  "uptime": 117,
   "consecutiveApiFailures": 0,
-  "lastApiSuccess": "2026-03-10T23:38:35.853Z",
+  "lastApiSuccess": null,
   "currentTier": 0,
   "batchConfig": {
     "batchSize": 50,

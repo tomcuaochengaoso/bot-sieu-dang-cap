@@ -1,7 +1,7 @@
 {
   "queue": {
-    "added": 7,
-    "removed": 7,
+    "added": 0,
+    "removed": 0,
     "overflows": 0,
     "rejected": 0,
     "currentSize": 0,
@@ -10,12 +10,12 @@
     "totalOverflows": 0
   },
   "batch": {
-    "batchesSent": 3,
-    "successfulBatches": 3,
+    "batchesSent": 0,
+    "successfulBatches": 0,
     "failedBatches": 0,
-    "totalEventsSent": 7,
-    "successRate": 1,
-    "avgBatchSize": 2
+    "totalEventsSent": 0,
+    "successRate": 0,
+    "avgBatchSize": 0
   },
   "scaling": {
     "currentTier": 0,
@@ -30,21 +30,17 @@
     "scaleDownCount": 0,
     "recentHistory": [],
     "tierTime": {
-      "0": 505094
+      "0": 117387
     }
   },
   "events": {
-    "total": 7,
-    "breakdown": {
-      "Vào mục Bấm để tạo room": 2,
-      "Vào các kênh chat": 4,
-      "Vào các kênh voice tự tạo": 1
-    }
+    "total": 0,
+    "breakdown": {}
   },
   "health": {
     "consecutiveApiFailures": 0,
-    "lastApiSuccess": "2026-03-10T23:38:35.853Z",
-    "uptime": 505
+    "lastApiSuccess": null,
+    "uptime": 117
   },
-  "shutdownTime": "2026-03-10T23:40:58.756Z"
+  "shutdownTime": "2026-03-13T02:02:49.340Z"
 }
