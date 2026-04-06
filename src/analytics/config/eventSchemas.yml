@@ -1,10 +1,13 @@
 # Event Schema Configuration
 # Single source of truth for event naming, validation, and business logic mappings
 # Synced with Mixpanel database with Vietnamese event names
+# VERSION: Synchronized with legacy_event_schema.yaml v9.0
 
 metadata:
-  schema_version: "0.1.1"
-  format: "ivan-bot-event-schema"
+  schema_version: "1.0.0"
+  format: "mixpanel_vietnamese_events"
+  synced_with: "legacy_event_schema.yaml v9.0"
+  last_sync: "2026-04-07"
 
 templates:
   base_user: &base_user
@@ -69,9 +72,213 @@ templates:
     - sticker_count
     - has_custom_stickers
 
-# Event type definitions 
 events:
-  # Room Creation 
+  # LUỒNG 1: Onbroading server
+  mod_message_update:
+    name_pattern: "Mod cập nhật tin nhắn trong kênh {channel_name}"
+    luong: "Onbroading server"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - mod_update
+      - update_channel
+
+  marketing_role_event:
+    name: "vào mục ⭐️kiến-thức-marketing"
+    luong: "Onbroading server"
+    required_properties:
+      - *base_user
+      - *base_event
+      - role_name
+      - role_action
+      - is_marketing_role
+      - triggered_by_role_change
+
+  # LUỒNG 2: Sử dụng tính năng chát chung
+  general_chat_message:
+    name: "Sử dụng chát chung"
+    luong: "Sử dụng tính năng chát chung"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_message
+      - *base_event
+      - general_chat_interaction
+      - interaction_type
+
+  general_chat_gif:
+    name: "Vào gif trong chát chung"
+    luong: "Sử dụng tính năng chát chung"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_message
+      - *base_event
+      - general_chat_interaction
+
+  general_chat_sticker:
+    name: "Vào sticker trong chát chung"
+    luong: "Sử dụng tính năng chát chung"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_message
+      - *base_event
+      - *sticker_details
+      - general_chat_interaction
+
+  general_chat_emoji:
+    name: "Vào emojy trong chát chung"
+    luong: "Sử dụng tính năng chát chung"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - reaction_emoji
+
+  # LUỒNG 3: Xem loa phương
+  announcement_follow:
+    name: "Theo dõi loa phương"
+    luong: "Xem loa phương"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - webhook_id
+      - follow_timestamp
+
+  # LUỒNG 4: Vai trò ngườii dùng cập nhập
+  role_added:
+    name_pattern: "Đã thêm vai trò {role_name}"
+    luong: "Vai trò ngườii dùng cập nhập"
+    required_properties:
+      - *base_user
+      - *base_event
+      - role_name
+      - role_action
+      - is_role_event
+      - single_role_event
+      - target_user_id
+
+  role_removed:
+    name_pattern: "Đã loại bỏ vai trò {role_name}"
+    luong: "Vai trò ngườii dùng cập nhập"
+    required_properties:
+      - *base_user
+      - *base_event
+      - role_name
+      - role_action
+      - is_role_event
+      - single_role_event
+      - target_user_id
+
+  # LUỒNG 5: Vào mục gêm gủng
+  bot_marwuy_coin:
+    name: "Chơi gêm marwuy coin"
+    luong: "Vào mục gêm gủng"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - bot_id
+      - thread_id
+      - in_bot_thread
+
+  bot_pancake_owo_in_thread:
+    name: "Chơi gêm pancake và owo (trong thread)"
+    luong: "Vào mục gêm gủng"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *correlation
+      - bot_id
+      - bot_name
+      - vietnamese_bot_name
+      - use_correlation
+      - in_bot_thread
+
+  bot_pancake_owo_outside_thread:
+    name: "Chơi gêm pancake và owo (ngoài thread)"
+    luong: "Vào mục gêm gủng"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *correlation
+      - bot_id
+      - bot_name
+      - vietnamese_bot_name
+      - use_correlation
+      - in_bot_thread
+
+  bot_truth_or_dare:
+    name: "Chơi gêm truth or dare"
+    luong: "Vào mục gêm gủng"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - bot_id
+      - thread_id
+      - in_bot_thread
+
+  bot_tree_growing:
+    name: "Chơi gêm trồng cây"
+    luong: "Vào mục gêm gủng"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - bot_id
+      - thread_id
+      - in_bot_thread
+
+  special_thread_truth_or_dare:
+    name: "Chơi gêm truth or dare"
+    luong: "Vào mục gêm gủng"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - special_thread
+      - thread_id
+
+  bot_thread_message_uncorrelated:
+    name_pattern: "Nhắn trong kênh {thread_name}"
+    luong: "Vào mục gêm gủng"
+    required_properties:
+      - *base_user
+      - *base_event
+      - thread_id
+      - thread_name
+      - message_id
+      - uncorrelated
+      - timeout_reached
+
+  # LUỒNG 6: Vào mục cài-đặt-room
+  bot_room_settings_in_thread:
+    name: "Sử dụng bots cài đặt room (trong thread)"
+    luong: "Vào mục cài-đặt-room"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *correlation
+      - bot_id
+
+  bot_room_settings_outside_thread:
+    name: "Sử dụng bots cài đặt room (ngoài thread)"
+    luong: "Vào mục cài-đặt-room"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *correlation
+      - bot_id
+
+  # LUỒNG 7: Vào mục Bấm để tạo room
   room_creation:
     name: "Bấm để tạo room"
     luong: "Vào mục Bấm để tạo room"
@@ -83,65 +290,30 @@ events:
       - trigger_channel_id
       - destination_channel_id
 
-  # General Chat 
-  general_chat_message:
-    name: "Sử dụng chat chung"
-    luong: "Sử dụng tính năng chat chung"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_message
-      - *base_event
-      - general_chat_interaction
-      - interaction_type
-
-  general_chat_gif:
-    name: "Vào gif trong chat chung"
-    luong: "Sử dụng tính năng chat chung"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_message
-      - *base_event
-      - general_chat_interaction
-
-  general_chat_sticker:
-    name: "Vào sticker trong chat chung"
-    luong: "Sử dụng tính năng chat chung"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_message
-      - *base_event
-      - *sticker_details
-      - general_chat_interaction
-
-  # Voice Channels 
-  voice_join:
-    name_pattern: "Vào kênh {channel_name}"
-    luong_pattern: "voice_dynamic"
+  # LUỒNG 8: Vào các kênh voice cố định
+  voice_fixed_join:
+    name_pattern: "Vào kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
     required_properties:
       - *base_user
       - *base_channel
       - *base_event
       - category_id
       - category_name
-      - interaction_type
 
-  voice_leave:
-    name_pattern: "Rời kênh {channel_name}"
-    luong_pattern: "voice_dynamic"
+  voice_fixed_leave:
+    name_pattern: "Rời kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
     required_properties:
       - *base_user
       - *base_channel
       - *base_event
       - category_id
       - category_name
-      - interaction_type
 
-  voice_switch:
-    name_pattern: "Vào kênh {channel_name}"
-    luong_pattern: "voice_dynamic"
+  voice_switch_to_fixed:
+    name_pattern: "Vào kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
     required_properties:
       - *base_user
       - *base_channel
@@ -152,198 +324,363 @@ events:
       - previous_channel_id
       - previous_channel_name
 
-  # Text/Voice Channel Messages 
-  channel_message:
-    name_pattern: "Nhắn trong kênh {channel_name}"
-    luong_pattern: "channel_dynamic"
+  voice_fixed_message:
+    name_pattern: "Nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
     required_properties:
       - *base_user
       - *base_channel
       - *base_message
       - *base_event
-      - interaction_type
+      - category_id
+      - category_name
 
-  channel_sticker:
-    name_pattern: "Gửi sticker trong kênh {channel_name}"
-    luong_pattern: "channel_dynamic"
+  voice_fixed_delete_message:
+    name_pattern: "Xoá tin nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - deleted_message_id
+      - category_id
+
+  voice_fixed_edit_message:
+    name_pattern: "Sửa tin nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - edit_timestamp
+      - category_id
+
+  voice_fixed_reaction:
+    name_pattern: "React trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - emoji_id
+      - emoji_name
+      - emoji_unicode
+      - category_id
+      - category_name
+
+  voice_fixed_sticker:
+    name_pattern: "Gửi sticker trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
     required_properties:
       - *base_user
       - *base_channel
       - *base_event
       - *sticker_details
-      - interaction_type
+      - category_id
+      - category_name
 
-  channel_reaction:
-    name_pattern: "React trong kênh {channel_name}"
-    luong_pattern: "channel_dynamic"
+  voice_fixed_bot_interaction:
+    name_pattern: "Dùng bot \"{bot_name}\" trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice cố định"
     required_properties:
       - *base_user
       - *base_channel
       - *base_event
+      - bot_name
+      - bot_id
+      - category_id
+      - category_name
+
+  # LUỒNG 9: Vào các kênh voice tự tạo
+  voice_custom_join:
+    name_pattern: "Vào kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - category_id
+      - category_name
+
+  voice_custom_leave:
+    name_pattern: "Rời kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - category_id
+      - category_name
+
+  voice_switch_to_custom:
+    name_pattern: "Vào kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - category_id
+      - category_name
+      - is_voice_switch
+      - previous_channel_id
+      - previous_channel_name
+
+  voice_custom_message:
+    name_pattern: "Nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_message
+      - *base_event
+      - category_id
+      - category_name
+
+  voice_custom_delete_message:
+    name_pattern: "Xoá tin nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - deleted_message_id
+      - category_id
+
+  voice_custom_edit_message:
+    name_pattern: "Sửa tin nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - edit_timestamp
+      - category_id
+
+  voice_custom_reaction:
+    name_pattern: "React trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - emoji_id
       - emoji_name
       - emoji_unicode
+      - category_id
+      - category_name
 
-  channel_message_edit:
-    name_pattern: "Sửa tin nhắn trong kênh {channel_name}"
-    luong_pattern: "channel_dynamic"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_message
-      - *base_event
-      - author_id
-
-  channel_message_delete:
-    name_pattern: "Xóa tin nhắn trong kênh {channel_name}"
-    luong_pattern: "channel_dynamic"
+  voice_custom_sticker:
+    name_pattern: "Gửi sticker trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
     required_properties:
       - *base_user
       - *base_channel
       - *base_event
-
-  # Forum Events 
-  forum_thread_created:
-    name_pattern: "Đăng bài trong {thread_name}"
-    luong_pattern: "Vào mục {forum_name}"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_event
-      - *base_forum
-      - forum_name
-
-  forum_reply:
-    name_pattern: "Thảo luận về bài viết trong {forum_name}"
-    luong_pattern: "Vào mục {forum_name}"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_message
-      - *base_event
-      - *base_forum
-      - interaction_type
-
-  forum_sticker:
-    name_pattern: "Gửi sticker trong {forum_name}"
-    luong_pattern: "Vào mục {forum_name}"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_event
-      - *base_forum
       - *sticker_details
-      - interaction_type
+      - category_id
+      - category_name
 
-  forum_reaction:
-    name_pattern: "React trong kênh {thread_name}"
-    luong_pattern: "channel_dynamic"
+  voice_custom_bot_interaction:
+    name_pattern: "Dùng bot \"{bot_name}\" trong kênh \"{channel_name}\""
+    luong: "Vào các kênh voice tự tạo"
     required_properties:
       - *base_user
       - *base_channel
       - *base_event
-      - *base_forum
-      - emoji_name
-      - emoji_unicode
+      - bot_name
+      - bot_id
+      - category_id
+      - category_name
 
-  forum_message_edit:
-    name_pattern: "Sửa tin nhắn về bài viết trong {forum_name}"
-    luong_pattern: "Vào mục {forum_name}"
+  # LUỒNG 10: Vào các kênh chat
+  text_channel_message:
+    name_pattern: "Nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh chat"
     required_properties:
       - *base_user
       - *base_channel
       - *base_message
       - *base_event
-      - *base_forum
-      - author_id
+      - category_id
+      - category_name
 
-  forum_thread_deleted:
-    name_pattern: "Xóa bài trong {thread_name}"
-    luong_pattern: "Vào mục {forum_name}"
-    required_properties:
-      - *base_user
-      - *base_channel
-      - *base_event
-      - *base_forum
-      - forum_name
-
-  forum_message_delete:
-    name_pattern: "Xóa tin nhắn trong kênh {thread_name}"
+  text_channel_delete_message:
+    name_pattern: "Xoá tin nhắn trong kênh \"{channel_name}\""
     luong: "Vào các kênh chat"
     required_properties:
       - *base_user
       - *base_channel
       - *base_event
+      - deleted_message_id
+      - category_id
+      - category_name
+
+  text_channel_edit_message:
+    name_pattern: "Sửa tin nhắn trong kênh \"{channel_name}\""
+    luong: "Vào các kênh chat"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - edit_timestamp
+      - edited_message_id
+      - category_id
+      - category_name
+
+  text_channel_reaction:
+    name_pattern: "React trong kênh \"{channel_name}\""
+    luong: "Vào các kênh chat"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - emoji_id
+      - emoji_name
+      - emoji_unicode
+      - category_id
+      - category_name
+
+  text_channel_sticker:
+    name_pattern: "Gửi sticker trong kênh \"{channel_name}\""
+    luong: "Vào các kênh chat"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *sticker_details
+      - category_id
+      - category_name
+
+  text_channel_bot_interaction:
+    name_pattern: "Dùng bot \"{bot_name}\" trong kênh \"{channel_name}\""
+    luong: "Vào các kênh chat"
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - bot_name
+      - bot_id
+
+  # LUỒNG 11: Vào mục "{forum_name}"
+  forum_thread_created:
+    name_pattern: "Đăng bài trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
       - *base_forum
+      - forum_name
+      - interaction_type
 
-  # Role Management 
-  role_added:
-    name_pattern: "thêm vai trò {role_name}"
-    luong: "Vai trò người dùng cập nhập"
+  forum_thread_deleted:
+    name_pattern: "Xoá bài trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
     required_properties:
       - *base_user
+      - *base_channel
       - *base_event
-      - role_name
-      - role_action
-      - is_role_event
-      - single_role_event
+      - *base_forum
+      - forum_name
+      - interaction_type
 
-  role_removed:
-    name_pattern: "loại bỏ vai trò {role_name}"
-    luong: "Vai trò người dùng cập nhập"
+  forum_thread_follow:
+    name_pattern: "Theo dõi bài trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
     required_properties:
       - *base_user
+      - *base_channel
       - *base_event
-      - role_name
-      - role_action
-      - is_role_event
-      - single_role_event
+      - *base_forum
+      - forum_name
+      - parent_channel_type
+      - interaction_type
 
-  marketing_role_event:
-    name: "vào mục kiến-thức-marketing"
-    luong: "Onbroading server"
+  forum_reply:
+    name_pattern: "Thảo luận về bài viết trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
     required_properties:
       - *base_user
+      - *base_channel
+      - *base_message
       - *base_event
-      - role_name
-      - role_action
-      - is_marketing_role
-      - triggered_by_role_change
+      - *base_forum
+      - forum_name
+      - interaction_type
 
-  # Bot Interactions 
-  bot_marwuy_coin:
-    name: "Chơi game marwuy coin"
-    luong: "Vào mục game gặng"
+  forum_message_delete:
+    name_pattern: "Xoá tin nhắn về bài viết trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *base_forum
+      - forum_name
 
-  bot_pancake_owo_in_thread:
-    name: "Chơi game pancake và owo trong thread"
-    luong: "Vào mục game gặng"
+  forum_message_edit:
+    name_pattern: "Sửa tin nhắn về bài viết trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_message
+      - *base_event
+      - *base_forum
+      - forum_name
+      - author_id
 
-  bot_pancake_owo_outside_thread:
-    name: "Chơi game pancake và owo ngoài thread"
-    luong: "Vào mục game gặng"
+  forum_sticker:
+    name_pattern: "Gửi sticker trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *base_forum
+      - *sticker_details
+      - forum_name
+      - interaction_type
 
-  bot_truth_or_dare:
-    name: "Chơi game truth or dare"
-    luong: "Vào mục game gặng"
+  forum_react_to_thread:
+    name_pattern: "React về bài viết trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *base_forum
+      - forum_name
+      - parent_channel_type
+      - emoji_id
+      - emoji_name
 
-  bot_tree_growing:
-    name: "Chơi game trồng cây"
-    luong: "Vào mục game gặng"
+  forum_react_to_message:
+    name_pattern: "React tin nhắn trong \"{forum_name}\" forum"
+    luong_pattern: "Vào mục \"{forum_name}\""
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *base_forum
+      - forum_name
+      - parent_channel_type
+      - emoji_id
+      - emoji_name
+      - emoji_unicode
 
-  bot_room_settings_in_thread:
-    name: "Sử dụng bots cài đặt room trong thread"
-    luong: "Vào mục cài-đặt-room"
+  forum_sticker_in_thread:
+    name_pattern: "Gửi sticker trong \"{forum_name}\""
+    luong_pattern: "Vào mục \"{forum_name}\""
+    required_properties:
+      - *base_user
+      - *base_channel
+      - *base_event
+      - *base_forum
+      - forum_name
+      - parent_channel_type
+      - *sticker_details
 
-  bot_room_settings_outside_thread:
-    name: "Sử dụng bots cài đặt room ngoài thread"
-    luong: "Vào mục cài-đặt-room"
-
-  # Special Threads 
-  special_thread_truth_or_dare:
-    name: "Chơi game truth or dare"
-    luong: "Vào mục game gặng"
-
-# Validation rules
 validation:
   "User ID":
     type: string
@@ -390,16 +727,18 @@ validation:
     type: boolean
     default: true
 
-# Luong (flow category) definitions
 luong_definitions:
   onboarding:
     value: "Onbroading server"
     description: "User onboarding journey events"
   general_chat:
-    value: "Sử dụng tính năng chat chung"
+    value: "Sử dụng tính năng chát chung"
     description: "General chat feature usage"
+  announcement:
+    value: "Xem loa phương"
+    description: "Announcement channel follow events"
   game_gang:
-    value: "Vào mục game gặng"
+    value: "Vào mục gêm gủng"
     description: "Gaming bot interactions"
   room_creation:
     value: "Vào mục Bấm để tạo room"
@@ -417,90 +756,105 @@ luong_definitions:
     value: "Vào các kênh chat"
     description: "General text/voice channel chat interactions"
   role_updates:
-    value: "Vai trò người dùng cập nhập"
+    value: "Vai trò ngườii dùng cập nhập"
     description: "Role assignment changes"
   forum_dynamic:
-    value_pattern: "Vào mục {forum_name}"
+    value_pattern: "Vào mục \"{forum_name}\""
     description: "Forum-specific events (dynamic per forum)"
 
-# Bot configuration
 bots:
   correlation_tracked:
     - bot_id: "239631525350604801"
       bot_name: "Pancake"
       vietnamese_bot_name: "Pancake"
-      event_name_in_thread: "Chơi game pancake và owo trong thread"
-      event_name_outside_thread: "Chơi game pancake và owo ngoài thread"
-      flow_category: "Vào mục game gặng"
+      event_name_in_thread: "Chơi gêm pancake và owo (trong thread)"
+      event_name_outside_thread: "Chơi gêm pancake và owo (ngoài thread)"
+      flow_category: "Vào mục gêm gủng"
       thread_id: "1383325105614098583"
       use_correlation: true
 
     - bot_id: "408785106942164992"
       bot_name: "OwO"
       vietnamese_bot_name: "OwO"
-      event_name_in_thread: "Chơi game pancake và owo trong thread"
-      event_name_outside_thread: "Chơi game pancake và owo ngoài thread"
-      flow_category: "Vào mục game gặng"
+      event_name_in_thread: "Chơi gêm pancake và owo (trong thread)"
+      event_name_outside_thread: "Chơi gêm pancake và owo (ngoài thread)"
+      flow_category: "Vào mục gêm gủng"
       thread_id: "1383325105614098583"
       use_correlation: true
 
     - bot_id: "1127643944117878834"
       bot_name: "Room Settings"
       vietnamese_bot_name: "bots cài đặt room"
-      event_name_in_thread: "Sử dụng bots cài đặt room trong thread"
-      event_name_outside_thread: "Sử dụng bots cài đặt room ngoài thread"
+      event_name_in_thread: "Sử dụng bots cài đặt room (trong thread)"
+      event_name_outside_thread: "Sử dụng bots cài đặt room (ngoài thread)"
       flow_category: "Vào mục cài-đặt-room"
-      thread_id: "1383325105614098583"
+      thread_id: null
       use_correlation: true
 
   thread_tracked:
     - bot_id: "693167035068317736"
       bot_name: "Marwuy Coin"
       vietnamese_bot_name: "marwuy coin"
-      event_name: "Chơi game marwuy coin"
-      flow_category: "Vào mục game gặng"
+      event_name: "Chơi gêm marwuy coin"
+      flow_category: "Vào mục gêm gủng"
+      thread_id: "1382960305427976202"
       use_correlation: false
 
     - bot_id: "692045914436796436"
       bot_name: "Truth or Dare"
       vietnamese_bot_name: "truth or dare"
-      event_name: "Chơi game truth or dare"
-      flow_category: "Vào mục game gặng"
+      event_name: "Chơi gêm truth or dare"
+      flow_category: "Vào mục gêm gủng"
+      thread_id: "1382963564943380531"
       use_correlation: false
 
     - bot_id: "731736201400418314"
       bot_name: "Tree Growing"
       vietnamese_bot_name: "trồng cây"
-      event_name: "Chơi game trồng cây"
-      flow_category: "Vào mục game gặng"
+      event_name: "Chơi gêm trồng cây"
+      flow_category: "Vào mục gêm gủng"
+      thread_id: "1383313866943103067"
       use_correlation: false
 
   settings_bots: []
 
-# Correlation settings
 correlation:
   time_window_ms: 2000
   min_confidence: 0.3
-  pending_timeout_ms: 10000
+  pending_timeout_ms: 2000
 
-# Special channel/role configurations
 special:
   marketing_roles:
-    - "Mkt Fundamental"
+    - "Mar Fundamental"
     - "Case Study"
     - "Branding"
     - "Digital"
     - "Trade"
-    - "Công nghệ Mkt"
-    - "Tâm thế làm Mkt"
+    - "Công nghệ Mar"
+    - "Tâm thế làm Mar"
 
-  mod_channels: {}
+  mod_channels:
+    "1115825781965324288":
+      name: "Kênh hướng dẫn"
+      event: "Mod cập nhật tin nhắn trong kênh Kênh hướng dẫn"
+      tracked_sender_ids:
+        - "1387086707312296007"
+    "1227582362746093659":
+      name: "Kênh luật"
+      event: "Mod cập nhật tin nhắn trong kênh Kênh luật"
+      tracked_sender_ids:
+        - "672782489437208608"
+    "1135417332446019604":
+      name: "Kênh kiến thức marketing"
+      event: "Mod cập nhật tin nhắn trong kênh Kênh kiến thức marketing"
+      tracked_sender_ids:
+        - "678344927997853742"
 
   special_threads:
     "1383323246619004998":
-      name: "truth-or-dare"
-      event_name: "Chơi game truth or dare"
-      flow_category: "Vào mục game gặng"
+      name: "Truth or Dare Messages"
+      event_name: "Chơi gêm truth or dare"
+      flow_category: "Vào mục gêm gủng"
 
   general_chat_channel_id: "1092307876594323510"
   room_creation_channel_id: "1127643888883077170"
@@ -508,21 +862,66 @@ special:
   marketing_channel_id: "1135417332446019604"
 
   forum_category_ids:
-    - "1227583449867993099"
-    - "1385484886766194749"
+    - "1094265617823047804"
+    - "1092298134639620199"
+    - "1112913932030574612"
+    - "1113493487258718369"
 
   voice_fixed_category_ids:
-    - "1087553008033644604"
+    - "1092298134639620204"
+
+unhandled_events:
+  - raw_event: "user_interested_in_event"
+    source: "on_scheduled_event_user_add"
+    payload: [event_id, event_name, event_start_time]
+    status: "NO_HANDLER"
+
+  - raw_event: "user_not_interested_in_event"
+    source: "on_scheduled_event_user_remove"
+    payload: [event_id, event_name]
+    status: "NO_HANDLER"
+
+  - raw_event: "invite_created"
+    source: "on_invite_create"
+    payload: [invite_code, invite_url, max_uses, temporary]
+    status: "NO_HANDLER"
+
+  - raw_event: "user_joined_server"
+    source: "on_member_join"
+    payload: [join_timestamp, joining_user_id]
+    status: "NO_HANDLER"
+
+  - raw_event: "user_left_server"
+    source: "on_member_remove"
+    payload: [leaving_user_id]
+    status: "NO_HANDLER"
+
+  - raw_event: "channel_created"
+    source: "on_guild_channel_create"
+    payload: [channel_type, parent_category_id, created_channel_id]
+    status: "NO_HANDLER"
+
+  - raw_event: "channel_deleted"
+    source: "on_guild_channel_delete"
+    payload: [channel_type, deleted_channel_id]
+    status: "NO_HANDLER"
 
 changelog:
+  - version: "1.0.0"
+    date: "2026-04-07"
+    changes:
+      - "SYNCED with legacy_event_schema.yaml v9.0"
+      - "Updated Vietnamese spelling: game->gêm, chat->chát, gang->gủng"
+      - "Added ~30 missing event types"
+      - "Added missing luồng: Xem loa phương"
+      - "Fixed Room Settings Bot thread_id to null"
+      - "Updated Forum Category IDs to match legacy"
+      - "Updated Voice Fixed Category ID to match legacy"
+      - "Changed Marketing Roles from Mkt to Mar"
+      - "Adjusted pending_timeout from 10s to 2s"
+      - "Added mod_channels configuration"
+      - "Added unhandled_events documentation"
   - version: "0.1.1"
     date: "2026-03-09"
     changes:
-      - "Synced with Mixpanel database - Vietnamese event names with diacritics"
-      - "Populated all bot IDs, channel IDs, marketing roles"
-      - "Added sticker, forum edit, forum delete event types"
-      - "Updated correlation window to 2s for Pancake/OwO"
-  - version: "0.1"
-    date: "2026-03-07"
-    changes:
-      - "Initial schema definition"
+      - "Initial schema with Vietnamese event names"
