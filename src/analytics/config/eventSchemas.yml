@@ -12,8 +12,8 @@ metadata:
 templates:
   base_user: &base_user
     - User ID
-    - discordname
-    - servername
+    - discord_name
+    - server_name
     - distinct_id
     - roles
     - is_bot
@@ -685,10 +685,10 @@ validation:
   "User ID":
     type: string
     required: true
-  discordname:
+  discord_name:
     type: string
     required: true
-  servername:
+  server_name:
     type: string
     required: true
   distinct_id:

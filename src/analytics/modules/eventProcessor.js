@@ -11,7 +11,7 @@ const debug = require('../utils/debug');
 // --- Foundation Layer: Utilities ---
 
 function generateTimestamp() {
-  return new Date().toISOString();
+  return Date.now(); // Unix timestamp in milliseconds for Mixpanel compatibility
 }
 
 function generateId() {
@@ -486,14 +486,14 @@ class EventProcessor {
       const messageProps = this._extractMessage(message);
       const context = { ...userProps, ...channelProps, ...messageProps, ...extra };
 
-      debug('process', `Processing: ${eventType} | user=${userProps.discordname || 'N/A'} | ch=${channelProps.channel_name || 'N/A'} (${channelProps.channel_type_class || '?'})`);
+      debug('process', `Processing: ${eventType} | user=${userProps.discord_name || 'N/A'} | ch=${channelProps.channel_name || 'N/A'} (${channelProps.channel_type_class || '?'})`);
 
       // Track user messages for correlation
       if (user && !user.bot && message && channel) {
         this.correlation.addUserMessage(
           channelProps.channel_id,
           userProps['User ID'],
-          userProps.discordname,
+          userProps.discord_name,
           messageProps.message_id,
           message.content?.slice(0, 200) || '',
         );
@@ -750,8 +750,8 @@ class EventProcessor {
     if (!user) return {};
     return {
       'User ID': ensureString(user.id),
-      discordname: user.globalName || user.displayName || user.username || user.tag || '',
-      servername: extra.servername || user.nickname || user.displayName || '',
+      discord_name: user.globalName || user.displayName || user.username || user.tag || '',
+      server_name: extra.server_name || user.nickname || user.displayName || '',
       is_bot: !!user.bot,
       roles: extra.roles || [],
       server_id: ensureString(extra.guild_id || user.guild?.id || ''),
@@ -840,7 +840,7 @@ class EventProcessor {
 
   // --- Event creation ---
   _createAnalyticsEvent(identification, context) {
-    const distinctId = context.servername || context.discordname || context['User ID'] || generateId();
+    const distinctId = context.server_name || context.discord_name || context['User ID'] || generateId();
     const timestamp = generateTimestamp();
 
     return {

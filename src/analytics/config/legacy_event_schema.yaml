@@ -1,0 +1,1346 @@
+# ============================================================
+# CONSOLIDATED DISCORD-TO-MIXPANEL EVENT SCHEMA
+# Version: 9.0  |  Schema Format: mixpanel_vietnamese_events
+#
+# Hierarchy: Luồng (Flow Category) → Event Definition → Properties
+#
+# Key v9.0 Changes:
+#   - All Discord snowflake IDs stored as STRINGS (64-bit precision safety)
+#   - Pancake/OwO bot suffix logic: simple thread_id comparison replaces
+#     location_suffix_inside / location_suffix_outside fields
+#   - New bot_thread_message_uncorrelated event (2-second timeout path)
+#   - Category-based channel tracking (replaces fixed channel ID lists)
+#   - Thread events only tracked when parent_channel_type = "forum"
+# ============================================================
+
+version: "9.0"
+schema_format: "mixpanel_vietnamese_events"
+
+# ============================================================
+# MIXPANEL BASE PROPERTIES (present on every event)
+# ============================================================
+mixpanel_base_properties:
+  distinct_id:
+    source: "User ID"           # Extracted from Discord user.id (string)
+    type: string
+    note: "Discord snowflake ID cast to string to prevent JS precision loss"
+  time:
+    source: get_utc_timestamp()
+    type: integer               # UTC milliseconds
+  insert_id:
+    source: generate_uuid()
+    type: string                # UUID v4 for deduplication
+
+# ============================================================
+# COMMON PROPERTY ANCHORS
+# ============================================================
+common_properties:
+
+  base_user: &base_user
+    - name: discord_name
+      type: string
+      source: "user.global_name or user.name"
+    - name: server_name
+      type: string
+      source: "member.display_name"
+    - name: server_id
+      type: string              # snowflake string
+      source: "guild.id"
+    - name: timestamp
+      type: integer             # UTC ms
+
+  base_channel: &base_channel
+    - name: channel_id
+      type: string              # snowflake string
+    - name: channel_name
+      type: string
+    - name: channel_type
+      type: string
+      values: [guild_text, guild_voice, guild_forum, guild_news, stage_voice]
+
+  base_message: &base_message
+    - name: message_id
+      type: string              # snowflake string
+    - name: message_type
+      type: string
+    - name: character_count
+      type: integer
+
+  vietnamese_event_meta: &vietnamese_event_meta
+    - name: vietnamese_event_name
+      type: string
+    - name: luong
+      type: string
+    - name: event_type
+      type: string
+    - name: is_trackable
+      type: boolean
+    - name: is_unidentified
+      type: boolean
+
+  bot_correlation: &bot_correlation
+    - name: correlation_type
+      type: string
+      values: ["theo dõi được người dùng", "không theo dõi được người dùng"]
+    - name: correlation_confidence
+      type: float               # 0.0 – 1.0
+    - name: is_correlated
+      type: boolean
+
+  role_event_props: &role_event_props
+    - name: role_name
+      type: string
+    - name: role_action
+      type: string
+      values: [added, removed]
+    - name: is_role_event
+      type: boolean             # always true
+    - name: single_role_event
+      type: boolean             # always true (one event per role)
+
+
+# ============================================================
+# TRACKED CONFIGURATION REFERENCE
+# ============================================================
+configuration:
+
+  tracked_bots:
+    # NOTE: bot IDs stored as integers internally; output as string in events
+    tree_growing_bot:
+      bot_id: "731736201400418314"   # string in Mixpanel
+      name: "Tree Growing Game Bot"
+      thread_id: "1383313866943103067"   # string
+      event_name: "Chơi gêm trồng cây"
+      use_correlation: false
+
+    pancake_bot:
+      bot_id: "239631525350604801"
+      name: "Pancake Bot"
+      thread_id: "1383325105614098583"   # BOT_THREAD_ID (shared with OwO)
+      event_name: "Chơi gêm pancake và owo"
+      use_correlation: true
+      # Suffix logic: if bot response thread_id == "1383325105614098583"
+      #   → event = "Chơi gêm pancake và owo (trong thread)"
+      # else
+      #   → event = "Chơi gêm pancake và owo (ngoài thread)"
+
+    owo_bot:
+      bot_id: "408785106942164992"
+      name: "OwO Bot"
+      thread_id: "1383325105614098583"   # Same BOT_THREAD_ID as Pancake
+      event_name: "Chơi gêm pancake và owo"
+      use_correlation: true
+      # Same suffix logic as Pancake Bot above
+
+    marwuy_coin_bot:
+      bot_id: "693167035068317736"
+      name: "Marwuy Coin Bot"
+      thread_id: "1382960305427976202"
+      event_name: "Chơi gêm marwuy coin"
+      use_correlation: false
+
+    truth_or_dare_bot:
+      bot_id: "692045914436796436"
+      name: "Truth or Dare Bot"
+      thread_id: "1382963564943380531"
+      event_name: "Chơi gêm truth or dare"
+      use_correlation: false
+
+    room_settings_bot:
+      bot_id: "1127643944117878834"
+      name: "Room Settings Bot"
+      thread_id: null            # No dedicated thread
+      event_name: "Sử dụng bots cài đặt room"
+      use_correlation: true
+
+  special_channels:
+    general_chat_id: "1092307876594323510"    # string
+    room_creation_trigger_id: "1127643888883077170"
+    mod_message_channels:
+      - channel_id: "1115825781965324288"
+        name: "Kênh hướng dẫn"
+        event: "Mod cập nhật tin nhắn trong kênh Kênh hướng dẫn"
+        tracked_sender_ids: ["1387086707312296007"]
+      - channel_id: "1227582362746093659"
+        name: "Kênh luật"
+        event: "Mod cập nhật tin nhắn trong kênh Kênh luật"
+        tracked_sender_ids: ["672782489437208608"]
+      - channel_id: "1135417332446019604"
+        name: "Kênh kiến thức marketing"
+        event: "Mod cập nhật tin nhắn trong kênh Kênh kiến thức marketing"
+        tracked_sender_ids: ["678344927997853742"]
+
+  special_threads:
+    - thread_id: "1383323246619004998"
+      name: "Truth or Dare Messages"
+      event_name: "Chơi gêm truth or dare"
+      luong: "Vào mục gêm gủng"
+
+  tracked_forum_category_ids:     # Automatic forum channel discovery
+    - "1094265617823047804"
+    - "1092298134639620199"
+    - "1112913932030574612"
+    - "1113493487258718369"
+
+  tracked_voice_category_ids:     # Distinguishes "fixed" vs "custom" voice
+    - "1092298134639620204"
+
+  marketing_roles:
+    - "Mar Fundamental"
+    - "Case Study"
+    - "Branding"
+    - "Digital"
+    - "Trade"
+    - "Công nghệ Mar"
+    - "Tâm thế làm Mar"
+
+  correlation_config:
+    window_seconds: 2.0           # Max time between user message and bot reply
+    pending_timeout_seconds: 2.0  # Timeout before uncorrelated event fires
+    min_confidence: 0.3
+    max_buffer_size: 20
+    max_message_age_seconds: 30.0
+
+
+# ============================================================
+# EVENT DEFINITIONS BY LUỒNG
+# ============================================================
+events:
+
+  # ----------------------------------------------------------
+  # LUỒNG 1: Onbroading server
+  # Trigger sources: on_member_update (role), on_message (mod)
+  # ----------------------------------------------------------
+  luong_onboarding:
+    luong_name: "Onbroading server"
+
+    events:
+
+      mod_message_update:
+        vietnamese_name_pattern: "Mod cập nhật tin nhắn trong kênh {channel_name}"
+        event_type: "mod_message_update"
+        raw_discord_event: "message_sent"
+        trigger_condition: >
+          message sent in a mod_message_channel (IDs: 1115825781965324288,
+          1227582362746093659, 1135417332446019604) AND author_id NOT in
+          that channel's tracked_sender_ids list
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: mod_update
+            type: boolean       # always true
+          - name: update_channel
+            type: string        # channel name
+        optional_properties:
+          - name: channel_id
+            type: string        # snowflake string
+
+      marketing_role_onboarding:
+        vietnamese_name: "vào mục ⭐️kiến-thức-marketing"
+        event_type: "marketing_role_onboarding"
+        raw_discord_event: "user_role_added OR user_role_removed"
+        trigger_condition: >
+          role_name is one of MARKETING_ROLES set.
+          NOTE: This event fires as a SECOND event alongside the
+          user_role_added/removed event in the same processing cycle.
+        required_properties:
+          <<: *base_user
+          <<: *vietnamese_event_meta
+          - name: role_name
+            type: string
+          - name: role_action
+            type: string
+            values: [added, removed]
+          - name: is_marketing_role
+            type: boolean       # always true
+        optional_properties:
+          - name: triggered_by_role_change
+            type: boolean       # always true
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 2: Sử dụng tính năng chát chung
+  # Channel ID: "1092307876594323510" (general_chat)
+  # Trigger source: on_message (message_sent, gif_sent, sticker_sent)
+  # NOTE: general_chat_emoji currently unreachable — discord_client.py
+  #       does not set has_emoji flag on messages.
+  # ----------------------------------------------------------
+  luong_general_chat:
+    luong_name: "Sử dụng tính năng chát chung"
+
+    events:
+
+      general_chat_message:
+        vietnamese_name: "Sử dụng chát chung"
+        event_type: "general_chat_message"
+        raw_discord_event: "message_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *base_message
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: general_chat_interaction
+            type: boolean
+          - name: interaction_type
+            type: string        # "message"
+
+      general_chat_gif:
+        vietnamese_name: "Vào gif trong chát chung"
+        event_type: "general_chat_gif"
+        raw_discord_event: "gif_sent"
+        trigger_condition: >
+          Message content contains "gif", ".gif", "tenor", or "giphy" (case-insensitive)
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *base_message
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: has_gif
+            type: boolean
+
+      general_chat_emoji:
+        vietnamese_name: "Vào emojy trong chát chung"
+        event_type: "general_chat_emoji"
+        raw_discord_event: "message_sent"
+        trigger_condition: >
+          event_data.has_emoji == True.
+          IMPORTANT: Currently unreachable — discord_client.py does not set
+          the has_emoji flag. Defined in schema but not triggered in practice.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: reaction_emoji
+            type: string
+
+      general_chat_sticker:
+        vietnamese_name: "Vào sticker trong chát chung"
+        event_type: "general_chat_sticker"
+        raw_discord_event: "sticker_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: sticker_ids
+            type: array[string]
+          - name: sticker_names
+            type: array[string]
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 3: Xem loa phương
+  # Trigger source: on_webhooks_update (announcement channels only)
+  # Requires: bot "View Audit Log" permission
+  # ----------------------------------------------------------
+  luong_announcement:
+    luong_name: "Xem loa phương"
+
+    events:
+
+      announcement_follow:
+        vietnamese_name: "Theo dõi loa phương"
+        event_type: "announcement_follow"
+        raw_discord_event: "announcement_follow"
+        trigger_condition: >
+          Webhook of type channel_follower created on a news/announcement
+          channel, detected via audit log (webhook_create action, within 5s).
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: webhook_id
+            type: string        # snowflake string
+          - name: follow_timestamp
+            type: string        # ISO 8601
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 4: Vai trò người dùng cập nhập
+  # Trigger source: on_member_update (per-role, one event each)
+  # NOTE: If role is a MARKETING_ROLE, an additional
+  #       marketing_role_onboarding event fires in Luồng 1.
+  # ----------------------------------------------------------
+  luong_roles:
+    luong_name: "Vai trò người dùng cập nhập"
+
+    events:
+
+      user_role_added:
+        vietnamese_name_pattern: "Đã thêm vai trò {role_name}"
+        event_type: "user_role_added"
+        raw_discord_event: "user_role_added"
+        trigger_condition: >
+          on_member_update fires one separate event per added role.
+          role_name truncated to 50 chars if needed.
+        required_properties:
+          <<: *base_user
+          <<: *vietnamese_event_meta
+          <<: *role_event_props
+          - name: target_user_id
+            type: string        # snowflake string
+        optional_properties:
+          - name: role_change_timestamp
+            type: float         # Unix timestamp
+
+      user_role_removed:
+        vietnamese_name_pattern: "Đã loại bỏ vai trò {role_name}"
+        event_type: "user_role_removed"
+        raw_discord_event: "user_role_removed"
+        trigger_condition: >
+          on_member_update fires one separate event per removed role.
+        required_properties:
+          <<: *base_user
+          <<: *vietnamese_event_meta
+          <<: *role_event_props
+          - name: target_user_id
+            type: string        # snowflake string
+        optional_properties:
+          - name: role_change_timestamp
+            type: float
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 5: Vào mục gêm gủng
+  # Multiple trigger sources: bot messages in threads, user
+  # messages in bot threads, special thread messages
+  # ----------------------------------------------------------
+  luong_games:
+    luong_name: "Vào mục gêm gủng"
+
+    events:
+
+      bot_thread_game_tree:
+        vietnamese_name: "Chơi gêm trồng cây"
+        event_type: "bot_thread_game_731736201400418314"
+        raw_discord_event: "message_sent (bot=False, thread_id matches)"
+        trigger_condition: >
+          User sends message in thread "1383313866943103067"
+          (Tree Growing Bot thread). Identified by thread_id match
+          against TRACKED_BOTS[bot_id].thread_id.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: bot_id
+            type: string        # "731736201400418314"
+          - name: thread_id
+            type: string        # "1383313866943103067" — snowflake string
+          - name: in_bot_thread
+            type: boolean       # always true
+        optional_properties:
+          - name: bot_name
+            type: string
+          - name: vietnamese_bot_name
+            type: string
+
+      bot_thread_game_marwuy_coin:
+        vietnamese_name: "Chơi gêm marwuy coin"
+        event_type: "bot_thread_game_693167035068317736"
+        raw_discord_event: "message_sent (bot=False, thread_id matches)"
+        trigger_condition: >
+          User sends message in thread "1382960305427976202"
+          (Marwuy Coin Bot thread).
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: bot_id
+            type: string        # "693167035068317736"
+          - name: thread_id
+            type: string        # "1382960305427976202"
+          - name: in_bot_thread
+            type: boolean
+        optional_properties:
+          - name: bot_name
+            type: string
+          - name: vietnamese_bot_name
+            type: string
+
+      bot_thread_game_truth_or_dare:
+        vietnamese_name: "Chơi gêm truth or dare"
+        event_type: "bot_thread_game_692045914436796436"
+        raw_discord_event: "message_sent (bot=False, thread_id matches)"
+        trigger_condition: >
+          User sends message in thread "1382963564943380531"
+          (Truth or Dare Bot thread).
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: bot_id
+            type: string        # "692045914436796436"
+          - name: thread_id
+            type: string        # "1382963564943380531"
+          - name: in_bot_thread
+            type: boolean
+        optional_properties:
+          - name: bot_name
+            type: string
+          - name: vietnamese_bot_name
+            type: string
+
+      special_thread_truth_or_dare:
+        vietnamese_name: "Chơi gêm truth or dare"
+        event_type: "special_thread_game"
+        raw_discord_event: "message_sent (bot=False, thread_id matches special)"
+        trigger_condition: >
+          User sends message in special thread "1383323246619004998"
+          (non-bot special thread, handled by SpecialThreadHandler).
+          Note: This is a distinct path from bot_thread_game_truth_or_dare
+          above — different thread ID.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: special_thread
+            type: boolean       # always true
+          - name: thread_id
+            type: string        # "1383323246619004998"
+        optional_properties: []
+
+      bot_interaction_pancake_owo:
+        # -------------------------------------------------------
+        # COMPLEX SUFFIX LOGIC (v9.0):
+        # Fires when Pancake (239631525350604801) or OwO
+        # (408785106942164992) bot RESPONDS (bot message).
+        #
+        # Suffix determination (simple thread_id comparison):
+        #   IF bot_response.thread_id == "1383325105614098583"
+        #     vietnamese_name = "Chơi gêm pancake và owo (trong thread)"
+        #   ELSE
+        #     vietnamese_name = "Chơi gêm pancake và owo (ngoài thread)"
+        #
+        # Correlation window: 2 seconds
+        # If correlated → triggering_user_id/name/delay added
+        # If not correlated → correlation_type = "không theo dõi được người dùng"
+        # -------------------------------------------------------
+        vietnamese_name_pattern: "Chơi gêm pancake và owo {suffix}"
+        suffix_values:
+          - "(trong thread)"    # bot response in thread 1383325105614098583
+          - "(ngoài thread)"    # bot response outside that thread
+        event_type: "bot_interaction_{bot_id}"  # e.g. bot_interaction_239631525350604801
+        raw_discord_event: "message_sent (bot=True, bot_id in TRACKED_BOTS)"
+        trigger_condition: >
+          Bot message received from Pancake or OwO bot.
+          Suffix assigned by comparing bot response channel/thread_id to BOT_THREAD_ID.
+          Correlation attempted within 2-second window against recent user messages.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          <<: *bot_correlation
+          - name: bot_id
+            type: string        # "239631525350604801" or "408785106942164992"
+          - name: bot_name
+            type: string
+          - name: vietnamese_bot_name
+            type: string
+          - name: use_correlation
+            type: boolean       # always true for these bots
+          - name: in_bot_thread
+            type: boolean
+        optional_properties:
+          - name: thread_id
+            type: string        # snowflake string, nullable
+          - name: triggering_user_id
+            type: string        # snowflake string — present if is_correlated=true
+          - name: triggering_user_name
+            type: string
+          - name: correlation_delay_seconds
+            type: float
+
+      bot_thread_message_uncorrelated:
+        # -------------------------------------------------------
+        # TIMEOUT PATH (new v9.0):
+        # User sends message in Pancake/OwO BOT_THREAD_ID
+        # ("1383325105614098583") but bot does NOT respond within
+        # PENDING_MESSAGE_TIMEOUT_SECONDS (2 seconds).
+        # Event generated asynchronously via asyncio.create_task.
+        # -------------------------------------------------------
+        vietnamese_name_pattern: "Nhắn trong kênh {thread_name}"
+        event_type: "bot_thread_message_uncorrelated"
+        raw_discord_event: "message_sent (user, in BOT_THREAD_ID) + 2s timeout"
+        trigger_condition: >
+          1. User posts in thread "1383325105614098583".
+          2. Message is tracked as "pending" in BotInteractionCorrelator.
+          3. Pancake/OwO bot does NOT respond within 2.0 seconds.
+          4. asyncio timeout task calls generate_uncorrelated_event().
+          Example event name: "Nhắn trong kênh pancake-owo-game"
+        required_properties:
+          <<: *base_user
+          <<: *vietnamese_event_meta
+          - name: thread_id
+            type: string        # "1383325105614098583" — snowflake string
+          - name: thread_name
+            type: string        # e.g. "pancake-owo-game"
+          - name: message_id
+            type: string        # snowflake string
+          - name: uncorrelated
+            type: boolean       # always true
+          - name: timeout_reached
+            type: boolean       # always true
+        optional_properties:
+          - name: message_content
+            type: string        # truncated to 200 chars
+          - name: user_id
+            type: string        # snowflake string
+          - name: user_name
+            type: string
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 6: Vào mục cài-đặt-room
+  # Trigger source: bot message from Room Settings Bot
+  # ----------------------------------------------------------
+  luong_room_settings:
+    luong_name: "Vào mục cài-đặt-room"
+
+    events:
+
+      bot_interaction_room_settings:
+        vietnamese_name: "Sử dụng bots cài đặt room"
+        event_type: "bot_interaction_1127643944117878834"
+        raw_discord_event: "message_sent (bot=True, bot_id=1127643944117878834)"
+        trigger_condition: >
+          Room Settings Bot responds (use_correlation=True).
+          Correlation attempted within 2-second window.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          <<: *bot_correlation
+          - name: bot_id
+            type: string        # "1127643944117878834"
+        optional_properties:
+          - name: triggering_user_id
+            type: string        # snowflake string
+          - name: triggering_user_name
+            type: string
+          - name: correlation_delay_seconds
+            type: float
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 7: Vào mục Bấm để tạo room
+  # Trigger source: on_voice_state_update (switch FROM trigger channel)
+  # ----------------------------------------------------------
+  luong_room_creation:
+    luong_name: "Vào mục Bấm để tạo room"
+
+    events:
+
+      room_creation_trigger:
+        vietnamese_name: "Bấm để tạo room"
+        event_type: "room_creation_trigger"
+        raw_discord_event: "user_switched_voice_channel"
+        trigger_condition: >
+          User switches voice FROM channel "1127643888883077170"
+          (the room creation trigger channel). The destination channel_id
+          is the newly created room.
+        required_properties:
+          <<: *base_user
+          <<: *vietnamese_event_meta
+          - name: trigger_channel_id
+            type: string        # "1127643888883077170" — snowflake string
+          - name: destination_channel_id
+            type: string        # snowflake string of new room
+          - name: room_creation
+            type: boolean       # always true
+        optional_properties: []
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 8: Vào các kênh voice cố định
+  # Fixed voice = voice channels in tracked category "1092298134639620204"
+  # Trigger sources: on_voice_state_update, on_message, reactions, etc.
+  # ----------------------------------------------------------
+  luong_voice_fixed:
+    luong_name: "Vào các kênh voice cố định"
+
+    events:
+
+      voice_fixed_join:
+        vietnamese_name_pattern: "Vào kênh \"{channel_name}\""
+        event_type: "fixed_voice_join"
+        raw_discord_event: "user_joined_voice_channel"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: voice_session_id
+            type: string
+          - name: category_id
+            type: string        # "1092298134639620204" — snowflake string
+          - name: category_name
+            type: string
+
+      voice_fixed_leave:
+        vietnamese_name_pattern: "Rời kênh \"{channel_name}\""
+        event_type: "fixed_voice_leave"
+        raw_discord_event: "user_left_voice_channel"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: voice_session_id
+            type: string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      voice_switch_to_fixed:
+        vietnamese_name_pattern: "Vào kênh \"{channel_name}\""
+        event_type: "voice_switch_to_fixed"
+        raw_discord_event: "user_switched_voice_channel"
+        trigger_condition: >
+          User switches voice channels and destination is in tracked
+          voice category "1092298134639620204".
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: previous_channel_id
+            type: string        # snowflake string
+          - name: previous_channel_name
+            type: string
+          - name: voice_session_id
+            type: string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+          - name: is_voice_switch
+            type: boolean       # always true
+
+      voice_fixed_message:
+        vietnamese_name_pattern: "Nhắn trong kênh \"{channel_name}\""
+        event_type: "fixed_voice_message"
+        raw_discord_event: "message_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *base_message
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      voice_fixed_delete_message:
+        vietnamese_name_pattern: "Xoá tin nhắn trong kênh \"{channel_name}\""
+        event_type: "fixed_voice_delete_message"
+        raw_discord_event: "message_deleted"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: deleted_message_id
+            type: string        # snowflake string
+          - name: category_id
+            type: string
+
+      voice_fixed_edit_message:
+        vietnamese_name_pattern: "Sửa tin nhắn trong kênh \"{channel_name}\""
+        event_type: "fixed_voice_edit_message"
+        raw_discord_event: "message_edited"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: edit_timestamp
+            type: string        # ISO 8601
+          - name: category_id
+            type: string
+
+      voice_fixed_reaction:
+        vietnamese_name_pattern: "React trong kênh \"{channel_name}\""
+        event_type: "fixed_voice_reaction"
+        raw_discord_event: "reaction_added"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: emoji_id
+            type: string        # snowflake string (custom emoji)
+          - name: emoji_name
+            type: string
+          - name: emoji_unicode
+            type: string        # unicode emoji
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      voice_fixed_sticker:
+        vietnamese_name_pattern: "Gửi sticker trong kênh \"{channel_name}\""
+        event_type: "fixed_voice_sticker"
+        raw_discord_event: "sticker_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: sticker_ids
+            type: array[string]
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      voice_fixed_bot_interaction:
+        vietnamese_name_pattern: "Dùng bot \"{bot_name}\" trong kênh \"{channel_name}\""
+        event_type: "fixed_voice_bot_interaction"
+        raw_discord_event: "message_sent (bot)"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: bot_name
+            type: string
+          - name: bot_id
+            type: string        # snowflake string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 9: Vào các kênh voice tự tạo
+  # Custom voice = voice channels NOT in tracked category
+  # ----------------------------------------------------------
+  luong_voice_custom:
+    luong_name: "Vào các kênh voice tự tạo"
+
+    events:
+
+      voice_custom_join:
+        vietnamese_name_pattern: "Vào kênh \"{channel_name}\""
+        event_type: "custom_voice_join"
+        raw_discord_event: "user_joined_voice_channel"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      voice_custom_leave:
+        vietnamese_name_pattern: "Rời kênh \"{channel_name}\""
+        event_type: "custom_voice_leave"
+        raw_discord_event: "user_left_voice_channel"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      voice_switch_to_custom:
+        vietnamese_name_pattern: "Vào kênh \"{channel_name}\""
+        event_type: "voice_switch_to_custom"
+        raw_discord_event: "user_switched_voice_channel"
+        trigger_condition: >
+          User switches voice channels and destination is NOT in tracked
+          voice category "1092298134639620204".
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: previous_channel_id
+            type: string
+          - name: previous_channel_name
+            type: string
+          - name: voice_session_id
+            type: string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+          - name: is_voice_switch
+            type: boolean
+
+      voice_custom_message:
+        vietnamese_name_pattern: "Nhắn trong kênh \"{channel_name}\""
+        event_type: "custom_voice_message"
+        raw_discord_event: "message_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *base_message
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      voice_custom_delete_message:
+        vietnamese_name_pattern: "Xoá tin nhắn trong kênh \"{channel_name}\""
+        event_type: "custom_voice_delete_message"
+        raw_discord_event: "message_deleted"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: deleted_message_id
+            type: string
+          - name: category_id
+            type: string
+
+      voice_custom_edit_message:
+        vietnamese_name_pattern: "Sửa tin nhắn trong kênh \"{channel_name}\""
+        event_type: "custom_voice_edit_message"
+        raw_discord_event: "message_edited"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: edit_timestamp
+            type: string
+          - name: category_id
+            type: string
+
+      voice_custom_reaction:
+        vietnamese_name_pattern: "React trong kênh \"{channel_name}\""
+        event_type: "custom_voice_reaction"
+        raw_discord_event: "reaction_added"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: emoji_id
+            type: string
+          - name: emoji_name
+            type: string
+          - name: emoji_unicode
+            type: string
+
+      voice_custom_sticker:
+        vietnamese_name_pattern: "Gửi sticker trong kênh \"{channel_name}\""
+        event_type: "custom_voice_sticker"
+        raw_discord_event: "sticker_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: sticker_ids
+            type: array[string]
+
+      voice_custom_bot_interaction:
+        vietnamese_name_pattern: "Dùng bot \"{bot_name}\" trong kênh \"{channel_name}\""
+        event_type: "custom_voice_bot_interaction"
+        raw_discord_event: "message_sent (bot)"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: bot_name
+            type: string
+          - name: bot_id
+            type: string
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 10: Vào các kênh chat  (text channels)
+  # ----------------------------------------------------------
+  luong_text_chat:
+    luong_name: "Vào các kênh chat"
+
+    events:
+
+      text_channel_message:
+        vietnamese_name_pattern: "Nhắn trong kênh \"{channel_name}\""
+        event_type: "channel_message"
+        raw_discord_event: "message_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *base_message
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      text_channel_delete_message:
+        vietnamese_name_pattern: "Xoá tin nhắn trong kênh \"{channel_name}\""
+        event_type: "channel_delete_message"
+        raw_discord_event: "message_deleted"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: deleted_message_id
+            type: string        # snowflake string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      text_channel_edit_message:
+        vietnamese_name_pattern: "Sửa tin nhắn trong kênh \"{channel_name}\""
+        event_type: "channel_edit_message"
+        raw_discord_event: "message_edited"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: edit_timestamp
+            type: string        # ISO 8601
+          - name: edited_message_id
+            type: string        # snowflake string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      text_channel_reaction:
+        vietnamese_name_pattern: "React trong kênh \"{channel_name}\""
+        event_type: "channel_reaction"
+        raw_discord_event: "reaction_added OR reaction_removed"
+        note: >
+          reaction_removed maps to same "reaction" interaction_type as reaction_added
+          in text channel EVENT_INTERACTION_MAPPINGS.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: emoji_id
+            type: string        # snowflake string (custom emoji)
+          - name: emoji_name
+            type: string
+          - name: emoji_unicode
+            type: string        # standard unicode emoji
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      text_channel_sticker:
+        vietnamese_name_pattern: "Gửi sticker trong kênh \"{channel_name}\""
+        event_type: "channel_sticker"
+        raw_discord_event: "sticker_sent"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: sticker_ids
+            type: array[string]
+          - name: sticker_names
+            type: array[string]
+          - name: sticker_count
+            type: integer
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      text_channel_bot_interaction:
+        vietnamese_name_pattern: "Dùng bot \"{bot_name}\" trong kênh \"{channel_name}\""
+        event_type: "channel_bot_interaction"
+        raw_discord_event: "message_sent (bot, untracked bot ID)"
+        note: >
+          Fires for bot messages from bots NOT in TRACKED_BOTS config,
+          when channel is a text channel. Tracked bots have their own
+          dedicated event paths above.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: bot_name
+            type: string
+          - name: bot_id
+            type: string
+
+
+  # ----------------------------------------------------------
+  # LUỒNG 11: Vào mục "{forum_name}"  [DYNAMIC]
+  # Luồng name is dynamically constructed from the forum channel name.
+  # Only fires for forums in tracked category IDs:
+  #   1094265617823047804, 1092298134639620199,
+  #   1112913932030574612, 1113493487258718369
+  # Non-forum threads are silently dropped (return []).
+  # ----------------------------------------------------------
+  luong_forum_dynamic:
+    luong_name_pattern: "Vào mục \"{forum_name}\""
+    note: >
+      forum_name = the parent forum channel's name.
+      Only events where parent_channel_type contains "forum" are tracked.
+      The luong and vietnamese_name are both dynamic strings.
+
+    events:
+
+      forum_thread_create:
+        vietnamese_name_pattern: "Đăng bài trong \"{forum_name}\""
+        event_type: "forum_thread_create"
+        raw_discord_event: "thread_created"
+        trigger_condition: >
+          on_thread_create fires with parent_channel_type = "forum" or
+          "guild_forum". Non-forum parents are silently ignored.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: forum_name
+            type: string
+          - name: thread_id
+            type: string        # snowflake string
+          - name: interaction_type
+            type: string        # "thread_create"
+        optional_properties:
+          - name: parent_channel_type
+            type: string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      forum_thread_delete:
+        vietnamese_name_pattern: "Xoá bài trong \"{forum_name}\""
+        event_type: "forum_thread_delete"
+        raw_discord_event: "thread_deleted"
+        trigger_condition: >
+          on_thread_delete with parent_channel_type = forum only.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: forum_name
+            type: string
+          - name: thread_id
+            type: string
+          - name: interaction_type
+            type: string        # "thread_delete"
+        optional_properties:
+          - name: parent_channel_type
+            type: string
+          - name: category_id
+            type: string
+          - name: category_name
+            type: string
+
+      forum_thread_follow:
+        vietnamese_name_pattern: "Theo dõi bài trong \"{forum_name}\""
+        event_type: "forum_thread_follow"
+        raw_discord_event: "thread_followed"
+        trigger_condition: >
+          on_thread_member_join (non-bot user, non-bot-itself).
+          Only when parent_channel_type is forum.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+          - name: forum_name
+            type: string
+          - name: thread_id
+            type: string
+          - name: parent_channel_type
+            type: string
+          - name: interaction_type
+            type: string        # "thread_follow"
+        optional_properties:
+          - name: thread_name
+            type: string
+          - name: parent_channel_id
+            type: string
+          - name: joined_at
+            type: string        # ISO 8601
+          - name: parent_category_id
+            type: string
+          - name: parent_category_name
+            type: string
+
+      forum_message_in_thread:
+        vietnamese_name_pattern: "Thảo luận về bài viết trong \"{forum_name}\""
+        event_type: "channel_message_in_thread"
+        raw_discord_event: "message_sent (user, thread_id set, parent is forum)"
+        trigger_condition: >
+          User sends message inside a forum thread.
+          channel_name uses parent_channel_name (the forum name), not the thread name.
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *base_message
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: thread_id
+            type: string
+          - name: parent_channel_id
+            type: string
+          - name: parent_channel_name
+            type: string        # = forum_name
+          - name: parent_channel_type
+            type: string
+          - name: parent_category_id
+            type: string
+          - name: parent_category_name
+            type: string
+
+      forum_delete_message_in_thread:
+        vietnamese_name_pattern: "Xoá tin nhắn về bài viết trong \"{forum_name}\""
+        event_type: "channel_delete_message_in_thread"
+        raw_discord_event: "message_deleted (user, thread_id set, parent is forum)"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: thread_id
+            type: string
+          - name: parent_channel_name
+            type: string
+          - name: parent_category_id
+            type: string
+
+      forum_edit_message_in_thread:
+        vietnamese_name_pattern: "Sửa tin nhắn về bài viết trong \"{forum_name}\""
+        event_type: "channel_edit_message_in_thread"
+        raw_discord_event: "message_edited (user, thread_id set, parent is forum)"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: thread_id
+            type: string
+          - name: parent_channel_name
+            type: string
+          - name: edit_timestamp
+            type: string
+
+      forum_react_to_thread:
+        vietnamese_name_pattern: "React về bài viết trong \"{forum_name}\""
+        event_type: "channel_react_to_thread"
+        raw_discord_event: "reaction_added (thread_reaction_added path)"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: parent_channel_type
+            type: string
+          - name: parent_category_id
+            type: string
+          - name: parent_category_name
+            type: string
+          - name: emoji_id
+            type: string
+          - name: emoji_name
+            type: string
+
+      forum_react_to_message:
+        vietnamese_name_pattern: "React tin nhắn trong \"{forum_name}\" forum"
+        event_type: "channel_react_to_message_in_thread"
+        raw_discord_event: "reaction_added (message inside forum thread)"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: parent_channel_type
+            type: string
+          - name: parent_category_id
+            type: string
+          - name: parent_category_name
+            type: string
+          - name: emoji_id
+            type: string
+          - name: emoji_name
+            type: string
+          - name: emoji_unicode
+            type: string
+
+      forum_sticker_in_thread:
+        vietnamese_name_pattern: "Gửi sticker trong \"{forum_name}\""
+        event_type: "channel_sticker_in_thread"
+        raw_discord_event: "sticker_sent (inside forum thread)"
+        required_properties:
+          <<: *base_user
+          <<: *base_channel
+          <<: *vietnamese_event_meta
+        optional_properties:
+          - name: parent_channel_type
+            type: string
+          - name: parent_category_id
+            type: string
+          - name: parent_category_name
+            type: string
+          - name: sticker_ids
+            type: array[string]
+
+
+# ============================================================
+# UNHANDLED DISCORD EVENTS (fall to generic fallback)
+# These events have no specific handler in EventIdentifier.
+# They produce: vietnamese_name="UNIDENTIFIED_EVENT: {type}"
+#               luong="Vào các kênh chat", is_unidentified=true
+# ============================================================
+unhandled_events:
+  - raw_event: "user_interested_in_event"
+    source: "on_scheduled_event_user_add"
+    payload: [event_id, event_name, event_start_time]
+    status: "NO_HANDLER — falls to generic fallback"
+
+  - raw_event: "user_not_interested_in_event"
+    source: "on_scheduled_event_user_remove"
+    payload: [event_id, event_name]
+    status: "NO_HANDLER — falls to generic fallback"
+
+  - raw_event: "invite_created"
+    source: "on_invite_create"
+    payload: [invite_code, invite_url, max_uses, temporary]
+    status: "NO_HANDLER — falls to generic fallback"
+
+  - raw_event: "user_joined_server"
+    source: "on_member_join"
+    payload: [join_timestamp, joining_user_id]
+    status: "NO_HANDLER — falls to generic fallback"
+
+  - raw_event: "user_left_server"
+    source: "on_member_remove"
+    payload: [leaving_user_id]
+    status: "NO_HANDLER — falls to generic fallback"
+
+  - raw_event: "channel_created"
+    source: "on_guild_channel_create"
+    payload: [channel_type, parent_category_id, created_channel_id]
+    status: "NO_HANDLER — falls to generic fallback"
+
+  - raw_event: "channel_deleted"
+    source: "on_guild_channel_delete"
+    payload: [channel_type, deleted_channel_id]
+    status: "NO_HANDLER — falls to generic fallback"

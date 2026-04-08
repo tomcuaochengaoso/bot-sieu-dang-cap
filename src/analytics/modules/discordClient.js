@@ -109,7 +109,7 @@ class AnalyticsEventListener {
         const currentRoles = [...newMember.roles.cache.values()]
           .filter(r => r.name !== '@everyone')
           .map(r => r.name);
-        const servername = newMember.displayName || newMember.nickname || '';
+        const server_name = newMember.displayName || newMember.nickname || '';
 
         for (const role of newRoles) {
           if (!oldRoles.has(role)) {
@@ -118,7 +118,7 @@ class AnalyticsEventListener {
               role_name: role,
               guild_id: String(newMember.guild.id),
               roles: currentRoles,
-              servername,
+              server_name,
             });
           }
         }
@@ -130,7 +130,7 @@ class AnalyticsEventListener {
               role_name: role,
               guild_id: String(newMember.guild.id),
               roles: currentRoles,
-              servername,
+              server_name,
             });
           }
         }
@@ -412,13 +412,13 @@ class AnalyticsEventListener {
         .map(r => r.name);
       return {
         roles,
-        servername: member.displayName || member.nickname || '',
+        server_name: member.displayName || member.nickname || '',
         guild_id: String(guild.id),
       };
     } catch {
       return {
         roles: [],
-        servername: '',
+        server_name: '',
         guild_id: String(guild.id),
       };
     }
