@@ -652,7 +652,7 @@ class EventProcessor {
 
     // --- Phase 3: Fallback ---
     return [new EventIdentification({
-      localizedName: `UNIDENTIFIED_EVENT_${eventType}`,
+      localizedName: `UNIDENTIFIED_EVENT: ${eventType}`,
       luong: 'Vào các kênh chat',
       eventType,
       unidentified: true,

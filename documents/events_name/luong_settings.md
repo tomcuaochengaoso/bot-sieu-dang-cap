@@ -142,4 +142,4 @@ Events exclusively in the general chat channel (`channel_id = 109230787659432351
 
 | Event template | Luong |
 |---|---|
-| "UNIDENTIFIED_EVENT_{event_type}" | `Vào các kênh chat` |
+| "UNIDENTIFIED_EVENT: {event_type}" | `Vào các kênh chat` |
