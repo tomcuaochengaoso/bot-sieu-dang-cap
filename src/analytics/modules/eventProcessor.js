@@ -546,14 +546,11 @@ class EventProcessor {
         ctx.channel_name, interactionType, ctx.category_id, extra,
       );
       if (result) {
-        // Override eventType to match legacy schema: fixed_voice_* or custom_voice_*
+        // Keep eventType as voice_join/voice_leave/voice_switch (no fixed/custom prefix)
         if (eventType === 'voice_switch') {
-          result.eventType = `voice_switch_to_${voiceType}`;
           result.properties.is_voice_switch = true;
           result.properties.previous_channel_id = ctx.previous_channel_id || ctx.from_channel_id || '';
           result.properties.previous_channel_name = ctx.previous_channel_name || ctx.from_channel_name || '';
-        } else {
-          result.eventType = `${voiceType}_voice_${interactionType}`;
         }
         return [result];
       }
