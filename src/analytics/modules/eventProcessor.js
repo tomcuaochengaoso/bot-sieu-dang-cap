@@ -238,7 +238,7 @@ class RoomCreationHandler {
       return new EventIdentification({
         localizedName: 'Bấm để tạo room',
         luong: 'Vào mục Bấm để tạo room',
-        eventType: 'room_creation',
+        eventType: 'room_creation_trigger',
         properties: {
           room_creation: true,
           trigger_channel_id: this.channelId,
