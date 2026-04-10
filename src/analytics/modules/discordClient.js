@@ -300,7 +300,7 @@ class AnalyticsEventListener {
     c.on('inviteCreate', (invite) => {
       try {
         if (!invite.inviter) return;
-        this._forward('invite_created', {
+        this._forward('generic_invite_created', {
           user: invite.inviter,
           channel: invite.channel,
           invite_code: invite.code,
