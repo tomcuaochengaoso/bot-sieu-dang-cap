@@ -650,7 +650,23 @@ class EventProcessor {
       }
     }
 
-    // --- Phase 3: Fallback ---
+    // --- Phase 3: Legacy schema events (pass-through) ---
+    // These events are in the legacy schema but have no special processing
+    const legacyPassThroughEvents = ['invite_created', 'channel_created', 'channel_deleted'];
+    if (legacyPassThroughEvents.includes(eventType)) {
+      const eventNames = {
+        invite_created: 'Tạo link mờ tham gia server',
+        channel_created: 'Tạo kênh mới',
+        channel_deleted: 'Xóa kênh',
+      };
+      return [new EventIdentification({
+        localizedName: eventNames[eventType],
+        luong: 'Vào các kênh chat',
+        eventType,
+      })];
+    }
+
+    // --- Phase 4: Fallback ---
     return [new EventIdentification({
       localizedName: `UNIDENTIFIED_EVENT: ${eventType}`,
       luong: 'Vào các kênh chat',
