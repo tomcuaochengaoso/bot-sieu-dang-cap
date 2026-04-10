@@ -316,7 +316,7 @@ class AnalyticsEventListener {
     // --- Member join/leave ---
     c.on('guildMemberAdd', (member) => {
       try {
-        this._forward('member_joined', {
+        this._forward('user_joined_server', {
           user: member.user,
           guild_id: String(member.guild.id),
           joined_at: member.joinedAt?.toISOString(),
@@ -328,7 +328,7 @@ class AnalyticsEventListener {
 
     c.on('guildMemberRemove', (member) => {
       try {
-        this._forward('member_left', {
+        this._forward('user_left_server', {
           user: member.user,
           guild_id: String(member.guild.id),
         });
@@ -362,7 +362,7 @@ class AnalyticsEventListener {
     // --- Scheduled Events ---
     c.on('guildScheduledEventUserAdd', (event, user) => {
       try {
-        this._forward('scheduled_event_user_add', {
+        this._forward('user_interested_in_event', {
           user,
           event_name: event.name,
           event_id: String(event.id),
@@ -374,7 +374,7 @@ class AnalyticsEventListener {
 
     c.on('guildScheduledEventUserRemove', (event, user) => {
       try {
-        this._forward('scheduled_event_user_remove', {
+        this._forward('user_not_interested_in_event', {
           user,
           event_name: event.name,
           event_id: String(event.id),
