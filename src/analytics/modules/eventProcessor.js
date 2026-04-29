@@ -440,32 +440,32 @@ class EventProcessor {
 
     // Initialize channel processors
     this.voiceProcessor = new ChannelProcessor('voice', {
-      join: 'Vào kênh {channel_name}',
-      leave: 'Rời kênh {channel_name}',
-      message: 'Nhắn trong kênh {channel_name}',
-      sticker: 'Gửi sticker trong kênh {channel_name}',
-      reaction: 'React trong kênh {channel_name}',
-      edit: 'Sửa tin nhắn trong kênh {channel_name}',
-      delete: 'Xóa tin nhắn trong kênh {channel_name}',
+      join: 'Vào kênh "{channel_name}"',
+      leave: 'Rồi kênh "{channel_name}"',
+      message: 'Nhắn trong kênh "{channel_name}"',
+      sticker: 'Gửi sticker trong kênh "{channel_name}"',
+      reaction: 'React trong kênh "{channel_name}"',
+      edit: 'Sửa tin nhắn trong kênh "{channel_name}"',
+      delete: 'Xóa tin nhắn trong kênh "{channel_name}"',
     }, null, this.voiceTracker);
 
     this.forumProcessor = new ChannelProcessor('forum', {
-      thread_created: 'Đăng bài trong {thread_name}',
-      thread_deleted: 'Xóa bài trong {thread_name}',
-      thread_follow: 'Theo dõi bài trong {forum_name}',
-      reply: 'Thảo luận về bài viết trong {forum_name}',
-      sticker: 'Gửi sticker trong {forum_name}',
-      reaction: 'React trong kênh {thread_name}',
-      edit: 'Sửa tin nhắn về bài viết trong {forum_name}',
-      delete: 'Xóa tin nhắn trong kênh {thread_name}',
+      thread_created: 'Đăng bài trong "{thread_name}"',
+      thread_deleted: 'Xóa bài trong "{thread_name}"',
+      thread_follow: 'Theo dõi bài trong "{forum_name}"',
+      reply: 'Thảo luận về bài viết trong "{forum_name}"',
+      sticker: 'Gửi sticker trong "{forum_name}"',
+      reaction: 'React trong kênh "{thread_name}"',
+      edit: 'Sửa tin nhắn về bài viết trong "{forum_name}"',
+      delete: 'Xóa tin nhắn trong kênh "{thread_name}"',
     }, 'Vào các kênh chat', null);
 
     this.textProcessor = new ChannelProcessor('text', {
-      message: 'Nhắn trong kênh {channel_name}',
-      sticker: 'Gửi sticker trong kênh {channel_name}',
-      reaction: 'React trong kênh {channel_name}',
-      edit: 'Sửa tin nhắn trong kênh {channel_name}',
-      delete: 'Xóa tin nhắn trong kênh {channel_name}',
+      message: 'Nhắn trong kênh "{channel_name}"',
+      sticker: 'Gửi sticker trong kênh "{channel_name}"',
+      reaction: 'React trong kênh "{channel_name}"',
+      edit: 'Sửa tin nhắn trong kênh "{channel_name}"',
+      delete: 'Xóa tin nhắn trong kênh "{channel_name}"',
     }, 'Vào các kênh chat', null);
   }
 
