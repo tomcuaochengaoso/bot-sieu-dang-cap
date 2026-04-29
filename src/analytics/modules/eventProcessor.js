@@ -452,6 +452,7 @@ class EventProcessor {
     this.forumProcessor = new ChannelProcessor('forum', {
       thread_created: 'Đăng bài trong {thread_name}',
       thread_deleted: 'Xóa bài trong {thread_name}',
+      thread_follow: 'Theo dõi bài trong {forum_name}',
       reply: 'Thảo luận về bài viết trong {forum_name}',
       sticker: 'Gửi sticker trong {forum_name}',
       reaction: 'React trong kênh {thread_name}',
@@ -569,6 +570,19 @@ class EventProcessor {
       if (result) return [result];
     }
 
+    // Thread member join (forum follow)
+    if (eventType === 'thread_member_join' && ctx.parent_channel_type === 'forum') {
+      const result = this.forumProcessor.detect(
+        ctx.channel_name, 'thread_follow', ctx.category_id, {
+          forumName: ctx.parent_channel_name || ctx.category_name || 'Unknown',
+          threadName: ctx.channel_name || ctx.thread_name || 'Unknown',
+          categoryName: ctx.category_name,
+          parentChannelType: ctx.parent_channel_type,
+        },
+      );
+      if (result) return [result];
+    }
+
     // Mod message
     if (eventType === 'message' && ctx.channel_id && ctx['User ID']) {
       const mod = this.modHandler.detect(ctx.channel_id, ctx['User ID']);
@@ -611,7 +625,7 @@ class EventProcessor {
       }
     }
 
-    if (channelCategory === 'forum') {
+    if (channelCategory === 'forum' || ctx.parent_channel_type === 'forum') {
       const interactionType = this._mapToForumInteraction(eventType);
       if (interactionType) {
         const forumName = ctx.parent_channel_name || ctx.category_name || 'Unknown';
