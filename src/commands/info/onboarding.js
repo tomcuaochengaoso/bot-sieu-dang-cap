@@ -3,21 +3,11 @@ const {
     StringSelectMenuBuilder,
     ActionRowBuilder,
     EmbedBuilder,
-    MessageFlags,
-    PermissionFlagsBits,
 } = require('discord.js');
-const { loadOnboardingConfig, resolveChannelMentions } = require('../../utils/onboarding-config');
 
 const data = new SlashCommandBuilder()
     .setName('onboarding')
-    .setDescription('MarWuy Onboarding System')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addSubcommand(sub => sub
-        .setName('post')
-        .setDescription('Post the onboarding menu in the configured welcome channel'))
-    .addSubcommand(sub => sub
-        .setName('preview')
-        .setDescription('Preview the onboarding menu ephemerally'));
+    .setDescription('Hiển thị menu hướng dẫn onboarding MarWuy');
 
 function buildOnboardingContent() {
     return {
@@ -80,41 +70,8 @@ function buildMenuPayload() {
 module.exports = {
     data,
     async execute(interaction) {
-        const sub = interaction.options.getSubcommand();
-        const config = loadOnboardingConfig();
-
-        if (sub === 'post') {
-            const welcomeChannelId = config.welcomeChannelId;
-            if (!welcomeChannelId || welcomeChannelId === 'YOUR_WELCOME_CHANNEL_ID_HERE') {
-                return interaction.reply({
-                    content: 'Welcome channel chưa được cấu hình trong `src/config/onboarding.yaml`.',
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
-
-            const channel = interaction.guild.channels.cache.get(welcomeChannelId)
-                || await interaction.guild.channels.fetch(welcomeChannelId).catch(() => null);
-
-            if (!channel) {
-                return interaction.reply({
-                    content: `Không tìm thấy kênh welcome với ID \`${welcomeChannelId}\`.`,
-                    flags: MessageFlags.Ephemeral,
-                });
-            }
-
-            const payload = buildMenuPayload();
-            await channel.send(payload);
-
-            return interaction.reply({
-                content: `Đã gửi menu onboarding vào ${channel}.`,
-                flags: MessageFlags.Ephemeral,
-            });
-        }
-
-        if (sub === 'preview') {
-            const payload = buildMenuPayload();
-            return interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
-        }
+        const payload = buildMenuPayload();
+        await interaction.reply(payload);
     },
 };
 
