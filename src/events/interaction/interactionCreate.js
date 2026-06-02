@@ -1,5 +1,7 @@
-const { MessageFlags } = require('discord.js');
+const { MessageFlags, EmbedBuilder } = require('discord.js');
 const feedbackModal = require('../../models/Feedback-modal.js');
+const { buildOnboardingContent } = require('../../commands/info/onboarding.js');
+const { loadOnboardingConfig, resolveChannelMentions } = require('../../utils/onboarding-config');
 
 module.exports = {
     name: 'interactionCreate',
@@ -36,6 +38,55 @@ module.exports = {
                         try {
                             await interaction.followUp({
                                 content: 'There was an error processing your request. Please try again later.',
+                                flags: MessageFlags.Ephemeral
+                            });
+                        } catch (followUpError) {
+                            console.error('[ERROR] Failed to send error followUp:', followUpError);
+                        }
+                    }
+                }
+            }
+
+            if (interaction.isStringSelectMenu()) {
+                try {
+                    if (interaction.customId === 'onboarding_select') {
+                        const selectedValue = interaction.values[0];
+                        const config = loadOnboardingConfig();
+                        const rawContentMap = buildOnboardingContent();
+                        const rawContent = rawContentMap[selectedValue];
+
+                        if (rawContent) {
+                            const resolvedContent = resolveChannelMentions(rawContent, config.channelIds);
+                            const embed = new EmbedBuilder()
+                                .setDescription(resolvedContent)
+                                .setColor(0x00BFFF);
+
+                            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                        } else {
+                            await interaction.reply({
+                                content: 'Không tìm thấy nội dung cho lựa chọn này.',
+                                flags: MessageFlags.Ephemeral
+                            });
+                        }
+
+                        return;
+                    }
+                } catch (error) {
+                    console.error('[ERROR] Error handling select menu interaction:', error);
+
+                    if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+                        try {
+                            await interaction.reply({
+                                content: 'There was an error processing your selection. Please try again later.',
+                                flags: MessageFlags.Ephemeral
+                            });
+                        } catch (replyError) {
+                            console.error('[ERROR] Failed to send error reply:', replyError);
+                        }
+                    } else if (interaction.deferred && !interaction.replied) {
+                        try {
+                            await interaction.followUp({
+                                content: 'There was an error processing your selection. Please try again later.',
                                 flags: MessageFlags.Ephemeral
                             });
                         } catch (followUpError) {
